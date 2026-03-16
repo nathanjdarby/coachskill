@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coach Skill — Value Selling Workshop
+
+A Next.js landing page for the Value Selling Workshop deposit, built for Coach Skill.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment (`.env.local`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Stripe**
+   - `STRIPE_SECRET_KEY` — from [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys).
+   - `NEXT_PUBLIC_BASE_URL` — your public URL (e.g. dev tunnel or production). Used for Stripe success/cancel redirects.
+   - Optional: `STRIPE_PRICE_ID`, `STRIPE_PRODUCT_ID`, `NEXT_PUBLIC_STRIPE_IMAGE_URL` for Stripe Checkout.
+   - Optional (recommended): `STRIPE_WEBHOOK_SECRET` — so completed payments automatically update “sold” quantity. In Stripe Dashboard → Developers → Webhooks, add endpoint `https://your-domain.com/api/stripe-webhook` and select `checkout.session.completed`.
 
-## Learn More
+2. **Admin login**
+   - `ADMIN_EMAIL` — email you use to sign in to the admin area.
+   - `ADMIN_PASSWORD` — password for admin login.
+   - `NEXTAUTH_SECRET` — random string (e.g. `openssl rand -base64 32`). Required for NextAuth.
+   - `NEXTAUTH_URL` — full URL of the app (e.g. `http://localhost:3000` in dev, or your production URL).
 
-To learn more about Next.js, take a look at the following resources:
+3. Run the app; “Secure your place” opens the modal; after name/email, “Pay £25” redirects to Stripe Checkout.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+├── app/
+│   ├── layout.tsx      # Root layout
+│   ├── page.tsx        # Homepage
+│   └── globals.css     # Global styles
+├── components/
+│   ├── Header.tsx
+│   ├── Hero.tsx
+│   ├── Benefits.tsx
+│   ├── Coach.tsx
+│   ├── WorkshopDetails.tsx
+│   ├── CheckoutModal.tsx   # Client component — payment form
+│   └── Footer.tsx
+└── public/
+    └── assets/             # Images (logo, poster, coach portrait)
+```
 
-## Deploy on Vercel
+## Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Landing page** — Workshop info, benefits, coach section, payment
+- **Checkout modal** — Two-step flow: name/email → redirect to Stripe Checkout for £25 deposit
+- **Stripe** — Checkout Session API; success/cancel redirects and banner
+- **Admin** — Sign in at `/admin/login` (use `ADMIN_EMAIL` and `ADMIN_PASSWORD`). From `/admin` you can manage **product quantities**: set max quantity and sold count per product. Checkout is blocked when a product has no spots left, and the “Secure your place” button shows spots left and is disabled when fully booked.
+- **Inventory** — Stored in `data/inventory.json`. Optional Stripe webhook updates “sold” when a payment completes.
+- **Responsive** — Mobile and desktop layouts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future Additions
+
+- API routes for other form submissions
+- Additional pages (e.g. success, workshop schedule)
+- Analytics, SEO
+
+## Build
+
+```bash
+npm run build
+npm start
+```
