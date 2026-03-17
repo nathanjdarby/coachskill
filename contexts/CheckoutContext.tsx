@@ -27,11 +27,13 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const openCheckout = useCallback(() => {
     setStep(1);
     setError(null);
+    setEmailError(null);
     formRef.current?.reset();
     setIsOpen(true);
     document.body.style.overflow = "hidden";
@@ -52,14 +54,23 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [closeCheckout]);
 
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleNextStep = () => {
     const name = (
       document.getElementById("checkout-name") as HTMLInputElement
     )?.value.trim();
     const email = (
       document.getElementById("checkout-email") as HTMLInputElement
-    )?.value;
+    )?.value?.trim();
     if (!name || !email) return;
+    if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setEmailError(null);
     goToStep(2);
   };
 
@@ -73,6 +84,10 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       document.getElementById("checkout-email") as HTMLInputElement
     )?.value?.trim();
     if (!name || !email) return;
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await fetch("/api/create-checkout-session", {
@@ -151,7 +166,13 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
                     name="email"
                     placeholder="jane@company.com"
                     required
+                    onChange={() => setEmailError(null)}
                   />
+                  {emailError && (
+                    <p className="checkout-error" role="alert">
+                      {emailError}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
