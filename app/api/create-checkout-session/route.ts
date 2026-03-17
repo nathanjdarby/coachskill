@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getSpotsLeft } from "@/lib/inventory";
-
-const WORKSHOP_PRODUCT_ID = "workshop-deposit";
 
 function getStripe() {
   const raw = process.env.STRIPE_SECRET_KEY;
@@ -36,14 +33,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Name and email are required" },
         { status: 400 },
-      );
-    }
-
-    const spotsLeft = await getSpotsLeft(WORKSHOP_PRODUCT_ID);
-    if (spotsLeft !== null && spotsLeft <= 0) {
-      return NextResponse.json(
-        { error: "This workshop is fully booked. No places left." },
-        { status: 403 },
       );
     }
 
@@ -81,7 +70,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${baseUrl}?checkout=canceled`,
       metadata: {
         customer_name: name.trim(),
-        product_id: process.env.STRIPE_PRODUCT_ID?.trim() || WORKSHOP_PRODUCT_ID,
+        product_id: process.env.STRIPE_PRODUCT_ID?.trim() || "workshop-deposit",
       },
     });
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { incrementSold } from "@/lib/inventory";
 
 function getStripe() {
   const raw = process.env.STRIPE_SECRET_KEY?.trim();
@@ -29,10 +28,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  // Payment completed — no inventory tracking needed
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const productId = (session.metadata?.product_id as string)?.trim() || "workshop-deposit";
-    await incrementSold(productId);
+    console.log("Checkout completed:", session.id, session.customer_email);
   }
 
   return NextResponse.json({ received: true });
