@@ -21,6 +21,9 @@ export function Header() {
           <Link href="/meet-monika" className="header-link">
             Meet Monika
           </Link>
+          <Link href="/landing" className="header-link">
+            Landing Page
+          </Link>
         </nav>
       </div>
     </header>
