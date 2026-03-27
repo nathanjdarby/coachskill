@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { getDb } from "@/lib/db";
+import { signups } from "@/lib/db/schema";
+import { getWorkshopBySlug, getDefaultWorkshop } from "@/lib/db/queries";
 
 function getStripe() {
   const raw = process.env.STRIPE_SECRET_KEY?.trim();
@@ -28,10 +31,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  // Payment completed — no inventory tracking needed
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    console.log("Checkout completed:", session.id, session.customer_email);
+    const slug = session.metadata?.workshop_slug?.trim();
+    const workshop = slug
+      ? await getWorkshopBySlug(slug)
+      : await getDefaultWorkshop();
+    if (!workshop) {
+      console.error("Stripe webhook: no workshop for session", session.id);
+      return NextResponse.json({ received: true });
+    }
+
+    const name =
+      session.metadata?.customer_name?.trim() ||
+      session.client_reference_id?.trim() ||
+      "Customer";
+    const email = session.customer_email?.trim() || "";
+    if (!email) {
+      console.error("Stripe webhook: missing email on session", session.id);
+      return NextResponse.json({ received: true });
+    }
+
+    const db = getDb();
+    const now = new Date();
+    await db
+      .insert(signups)
+      .values({
+        workshopId: workshop.id,
+        name,
+        email,
+        metadataJson: JSON.stringify({
+          stripe_session_id: session.id,
+          payment_status: session.payment_status,
+        }),
+        source: "stripe",
+        externalId: session.id,
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [signups.source, signups.externalId],
+        set: {
+          name,
+          email,
+          updatedAt: now,
+          metadataJson: JSON.stringify({
+            stripe_session_id: session.id,
+            payment_status: session.payment_status,
+          }),
+        },
+      });
   }
 
   return NextResponse.json({ received: true });

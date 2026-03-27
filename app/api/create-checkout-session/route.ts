@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const workshopSlug =
+      process.env.DEFAULT_WORKSHOP_SLUG?.trim() || "value-selling";
 
     const stripe = getStripe();
     const priceId = process.env.STRIPE_PRICE_ID?.trim();
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${baseUrl}?checkout=canceled`,
       metadata: {
         customer_name: name.trim(),
+        workshop_slug: workshopSlug,
         product_id: process.env.STRIPE_PRODUCT_ID?.trim() || "workshop-deposit",
       },
     });
