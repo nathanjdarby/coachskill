@@ -22,7 +22,7 @@ export function Header() {
             Meet Monika
           </Link>
           <Link href="/landing" className="header-link">
-            Landing Page
+            About Coach Skill
           </Link>
         </nav>
       </div>
