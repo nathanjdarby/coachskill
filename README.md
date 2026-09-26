@@ -82,7 +82,7 @@ The live site (https://coachskill.co.uk) runs on a Linode server under pm2, behi
 
 ```bash
 git push
-./scripts/deploy.sh
+npm run deploy        # or ./scripts/deploy.sh
 ```
 
 The server clones the new commit into its own release folder, installs dependencies (reusing the previous ones if `package-lock.json` hasn't changed), builds, backs up the database, runs migrations, then switches over and restarts. The old release keeps serving until the switch, and if the new one fails its health check it switches straight back. `./scripts/deploy.sh rollback` returns to the previous release (database migrations aren't undone, so keep them additive).
@@ -137,3 +137,4 @@ ssh coachskill-live 'cd /opt/coachskill/current && npm run admin:create -- monik
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Seed the default workshop |
 | `npm run admin:create -- <email> "<name>"` | Create an admin (or re-issue their set-password link) |
+| `npm run deploy` | Deploy GitHub's `main` to the live server |
