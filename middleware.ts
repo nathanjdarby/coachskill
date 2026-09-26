@@ -16,7 +16,12 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  const token = await getToken({ req: request, secret });
+  // Behind nginx the app sees plain http, but the browser is on https, where
+  // Auth.js names the cookie `__Secure-authjs.session-token`. Match that.
+  const secureCookie =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() === "https" ||
+    request.nextUrl.protocol === "https:";
+  const token = await getToken({ req: request, secret, secureCookie });
   if (!token) {
     const login = new URL("/login", request.url);
     login.searchParams.set("callbackUrl", pathname);
