@@ -1,63 +1,55 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { listDiscoveryCalls } from "@/lib/db/queries";
+import { DiscoveryActions, Disclosure } from "@/components/admin/ClientForms";
+import { requireAdmin } from "@/lib/dal";
 import { personaLabel } from "@/lib/discovery";
-import { SignOutButton } from "@/components/SignOutButton";
-
-const dateFormat = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Europe/London",
-});
+import { listDiscoveryCallsWithClients } from "@/lib/portal";
+import { formatDateTime } from "@/lib/time";
 
 export default async function AdminDiscoveryPage() {
-  const session = await auth();
-  if (!session) redirect("/admin/login");
-
-  const rows = await listDiscoveryCalls();
+  await requireAdmin();
+  const rows = await listDiscoveryCallsWithClients();
 
   return (
-    <div className="admin-dashboard">
-      <div className="admin-dashboard-header">
-        <div>
-          <h1>Discovery call requests</h1>
-          <p className="admin-muted">
-            Answers submitted through the discovery call form, newest first.{" "}
-            <Link href="/admin">Workshop signups →</Link>
-          </p>
-        </div>
-        <SignOutButton />
+    <div className="pt-page">
+      <div className="pt-page-head">
+        <h1>Discovery requests</h1>
+        <p className="pt-muted">
+          Answers from the discovery call form, newest first. When you decide to work with someone, add them as a client,
+          then invite them to create an account — it&apos;s linked to everything they told you here.
+        </p>
       </div>
 
       {rows.length === 0 ? (
-        <p className="admin-muted">No discovery call requests yet.</p>
+        <p className="pt-muted">No discovery requests yet.</p>
       ) : (
-        <div className="admin-discovery-list">
-          {rows.map((r) => (
-            <details key={r.id} className="admin-discovery-item">
+        <div className="pt-stack">
+          {rows.map(({ call, clientId }) => (
+            <Disclosure key={call.id} id={`request-${call.id}`} className="pt-card pt-details" defaultOpen={!clientId}>
               <summary>
-                <span className="admin-discovery-name">{r.fullName}</span>
-                <span className="admin-muted">
-                  {r.company} · {personaLabel(r.persona)}
+                <span className="pt-details-title">{call.fullName}</span>
+                <span className="pt-muted pt-small">
+                  {call.company} · {personaLabel(call.persona)}
                 </span>
-                <span className="admin-muted admin-discovery-date">
-                  {dateFormat.format(r.createdAt)}
-                </span>
+                {clientId ? <span className="pt-badge is-ok">Client</span> : <span className="pt-badge is-accent">New</span>}
+                <span className="pt-muted pt-small pt-push">{formatDateTime(call.createdAt)}</span>
               </summary>
-              <dl>
+              <dl className="pt-dl">
                 <dt>Email</dt>
                 <dd>
-                  <a href={`mailto:${r.email}`}>{r.email}</a>
+                  <a href={`mailto:${call.email}`} className="pt-link">
+                    {call.email}
+                  </a>
                 </dd>
                 <dt>Main goal (6 months)</dt>
-                <dd>{r.goal}</dd>
+                <dd>{call.goal}</dd>
                 <dt>Challenges</dt>
-                <dd>{r.challenges}</dd>
+                <dd>{call.challenges}</dd>
                 <dt>Anything else</dt>
-                <dd>{r.anythingElse || <span className="admin-muted">—</span>}</dd>
+                <dd>{call.anythingElse || <span className="pt-muted">—</span>}</dd>
               </dl>
-            </details>
+              <div className="pt-details-actions">
+                <DiscoveryActions discoveryCallId={call.id} name={call.fullName} email={call.email} clientId={clientId} />
+              </div>
+            </Disclosure>
           ))}
         </div>
       )}

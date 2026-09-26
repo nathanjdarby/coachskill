@@ -1,80 +1,116 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { listSignupsWithWorkshop, listWorkshops } from "@/lib/db/queries";
-import { AdminSignupsTable } from "@/components/AdminSignupsTable";
-import { SignOutButton } from "@/components/SignOutButton";
+import { requireAdmin } from "@/lib/dal";
+import {
+  adminDashboardCounts,
+  listClientsOverview,
+  listDiscoveryCallsWithClients,
+} from "@/lib/portal";
+import { formatDate, formatDateTime } from "@/lib/time";
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ workshop?: string; status?: string }>;
-}) {
-  const session = await auth();
-  if (!session) redirect("/admin/login");
+export default async function AdminOverviewPage() {
+  const admin = await requireAdmin();
+  const [counts, clients, requests] = await Promise.all([
+    adminDashboardCounts(),
+    listClientsOverview(),
+    listDiscoveryCallsWithClients(),
+  ]);
 
-  const sp = await searchParams;
-  const workshopParam = sp.workshop;
-  const statusParam = sp.status;
+  const unread = clients.filter((c) => c.unread > 0);
+  const upcoming = clients
+    .filter((c) => c.nextSession)
+    .sort((a, b) => a.nextSession!.startsAt.getTime() - b.nextSession!.startsAt.getTime())
+    .slice(0, 5);
+  const newRequests = requests.filter((r) => !r.clientId).slice(0, 5);
 
-  const workshopId =
-    workshopParam && workshopParam !== "all"
-      ? parseInt(workshopParam, 10)
-      : undefined;
-  const status =
-    statusParam && statusParam !== "all" ? statusParam : undefined;
-
-  const workshopList = await listWorkshops();
-  const rows = await listSignupsWithWorkshop({
-    workshopId: Number.isFinite(workshopId) ? workshopId : undefined,
-    status,
-  });
+  const stats = [
+    { label: "Active clients", value: counts.activeClients, href: "/admin/clients" },
+    { label: "Unread messages", value: counts.unreadMessages, href: "/admin/clients" },
+    { label: "Sessions in the next 7 days", value: counts.sessionsThisWeek, href: "/admin/clients" },
+    { label: "New discovery requests", value: counts.newDiscoveryRequests, href: "/admin/discovery" },
+  ];
 
   return (
-    <div className="admin-dashboard">
-      <div className="admin-dashboard-header">
-        <div>
-          <h1>Workshop signups</h1>
-          <p className="admin-muted">
-            Review signups from Stripe, n8n, or other sources. Use filters to
-            narrow the list.{" "}
-            <Link href="/admin/discovery">Discovery call requests →</Link>
-          </p>
-        </div>
-        <SignOutButton />
+    <div className="pt-page">
+      <div className="pt-page-head">
+        <h1>Hello, {admin.name.split(/\s+/)[0]}</h1>
+        <p className="pt-muted">Here&apos;s what&apos;s happening with your clients.</p>
       </div>
 
-      <form method="get" className="admin-filters">
-        <label>
-          Workshop{" "}
-          <select
-            name="workshop"
-            defaultValue={workshopParam ?? "all"}
-          >
-            <option value="all">All</option>
-            {workshopList.map((w) => (
-              <option key={w.id} value={String(w.id)}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Status{" "}
-          <select name="status" defaultValue={statusParam ?? "all"}>
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="accepted">Accepted</option>
-            <option value="on_hold">On hold</option>
-            <option value="declined">Declined</option>
-          </select>
-        </label>
-        <button type="submit" className="admin-link-btn">
-          Apply
-        </button>
-      </form>
+      <div className="pt-stats">
+        {stats.map((s) => (
+          <Link key={s.label} href={s.href} className="pt-card pt-stat">
+            <span className="pt-stat-value">{s.value}</span>
+            <span className="pt-muted pt-small">{s.label}</span>
+          </Link>
+        ))}
+      </div>
 
-      <AdminSignupsTable signups={rows} />
+      <div className="pt-columns">
+        <section className="pt-card">
+          <h2>Unread messages</h2>
+          {unread.length === 0 ? (
+            <p className="pt-muted">You&apos;re all caught up.</p>
+          ) : (
+            <ul className="pt-list">
+              {unread.map(({ client, unread: n }) => (
+                <li key={client.id}>
+                  <Link href={`/admin/clients/${client.id}#messages`} className="pt-list-link">
+                    <span>{client.fullName}</span>
+                    <span className="pt-badge is-accent">{n} new</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="pt-card">
+          <h2>Upcoming sessions</h2>
+          {upcoming.length === 0 ? (
+            <p className="pt-muted">No sessions booked.</p>
+          ) : (
+            <ul className="pt-list">
+              {upcoming.map(({ client, nextSession }) => (
+                <li key={client.id}>
+                  <Link href={`/admin/clients/${client.id}#sessions`} className="pt-list-link">
+                    <span>
+                      {client.fullName}
+                      <span className="pt-muted pt-small pt-block">{nextSession!.title}</span>
+                    </span>
+                    <span className="pt-muted pt-small">{formatDateTime(nextSession!.startsAt)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className="pt-card">
+        <div className="pt-card-head">
+          <h2>New discovery requests</h2>
+          <Link href="/admin/discovery" className="pt-link pt-small">
+            View all →
+          </Link>
+        </div>
+        {newRequests.length === 0 ? (
+          <p className="pt-muted">No new requests.</p>
+        ) : (
+          <ul className="pt-list">
+            {newRequests.map(({ call }) => (
+              <li key={call.id}>
+                <Link href={`/admin/discovery#request-${call.id}`} className="pt-list-link">
+                  <span>
+                    {call.fullName}
+                    <span className="pt-muted pt-small pt-block">{call.company}</span>
+                  </span>
+                  <span className="pt-muted pt-small">{formatDate(call.createdAt)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

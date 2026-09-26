@@ -28,7 +28,7 @@ export function Header() {
             About Coach Skill
           </Link>
         </nav>
-        <Link href="/client-login" className="header-link header-login">
+        <Link href="/login" className="header-link header-login">
           Client login
         </Link>
       </div>

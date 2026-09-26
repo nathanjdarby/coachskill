@@ -66,7 +66,7 @@ export default function Home() {
                   <Link href="/discovery-call" className="cta cta-hero">
                     Book your discovery call <span aria-hidden>→</span>
                   </Link>
-                  <Link href="/client-login" className="home-secondary-link">
+                  <Link href="/login" className="home-secondary-link">
                     Already a client? <strong>Client login</strong>{" "}
                     <span aria-hidden>→</span>
                   </Link>

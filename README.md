@@ -1,6 +1,6 @@
-# Coach Skill — Value Selling Workshop
+# Coach Skill
 
-Next.js site for Coach Skill's Value Selling Workshop: marketing pages, a £25 deposit via Stripe Checkout, and an admin dashboard for reviewing sign-ups.
+Next.js site for Coach Skill: marketing pages, a discovery call form, the Value Selling Workshop with a £25 Stripe deposit, and a client portal — an admin area for Monika to manage clients, and a private area for each client.
 
 ## Getting started
 
@@ -9,10 +9,11 @@ npm install
 cp .env.example .env.local   # then fill in values — see below
 npm run db:migrate           # create data/app.db
 npm run db:seed              # add the "value-selling" workshop
+npm run admin:create -- you@example.com "Your Name"   # prints a link to set your password
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). If port 3000 is taken, Next picks another port; keep `NEXT_PUBLIC_BASE_URL` in sync with it so Stripe redirects land in the right place.
+Open [http://localhost:3000](http://localhost:3000). If port 3000 is taken, Next picks another port; keep `NEXT_PUBLIC_BASE_URL` in sync with it (or leave it unset locally) so Stripe redirects and email links land in the right place.
 
 ## Environment
 
@@ -22,36 +23,58 @@ All variables are documented in [`.env.example`](.env.example). The essentials:
 | --- | --- |
 | `STRIPE_SECRET_KEY` | Creating checkout sessions (`sk_test_…` in dev) |
 | `STRIPE_WEBHOOK_SECRET` | Recording paid sign-ups from `/api/stripe-webhook` |
-| `NEXT_PUBLIC_BASE_URL` | Stripe success/cancel redirect URLs |
-| `AUTH_SECRET` (or `NEXTAUTH_SECRET`) | Admin sessions — `/admin` returns 503 without it |
-| `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` (or `ADMIN_PASSWORD`) | Admin login |
+| `NEXT_PUBLIC_BASE_URL` | Stripe redirects and links in emails |
+| `AUTH_SECRET` (or `NEXTAUTH_SECRET`) | Login sessions and form tokens — `/admin` and `/portal` return 503 without it |
+| `RESEND_API_KEY` | Sending invites, password resets and notifications (from `mail.coachskill.co.uk`) |
 | `N8N_WEBHOOK_SECRET` | Accepting sign-ups from n8n |
-
-A bcrypt hash must have every `$` escaped as `\$` in `.env.local`, or Next will mangle it. `.env.example` has a command that prints it already escaped.
 
 ## Features
 
-- **Pages** — `/` (book a discovery call), `/discovery-call` (step-by-step discovery call form), `/workshop` (Value Selling Workshop + checkout), `/meet-monika` (coach profile), `/landing` (About Coach Skill), `/client-login` (placeholder until client accounts exist).
+- **Pages** — `/` (book a discovery call), `/discovery-call` (step-by-step discovery call form), `/workshop` (Value Selling Workshop + checkout), `/meet-monika` (coach profile), `/landing` (About Coach Skill), `/login` (admins and clients).
 - **Checkout** — "Secure your place" collects name and email, then redirects to Stripe Checkout for the £25 deposit. Uses `STRIPE_PRICE_ID` if set, otherwise an inline £25 price. On return to `/workshop`, `?checkout=success|canceled` shows a banner.
 - **Sign-ups** — Stored in SQLite (`signups` table), created by:
   - **Stripe** — `checkout.session.completed` events on `POST /api/stripe-webhook`. In Stripe Dashboard → Developers → Webhooks, point an endpoint at `https://your-domain.com/api/stripe-webhook`. Locally, use `stripe listen --forward-to localhost:3000/api/stripe-webhook`.
   - **n8n** — `POST /api/webhooks/n8n` with `Authorization: Bearer <N8N_WEBHOOK_SECRET>` (or `X-Webhook-Secret`) and a JSON body `{ "workshopSlug", "name", "email", "id" }`, plus optional `phone` and `company`. `id` makes retries idempotent.
 - **Discovery call spam protection** — `POST /api/discovery-call` requires a signed, time-stamped token from `GET /api/discovery-call` (signed with `AUTH_SECRET`), allows 5 submissions per IP per hour, and quietly drops submissions that fill the hidden honeypot field, arrive within 4 seconds of the token, or contain more than 2 links. See [`lib/spam.ts`](lib/spam.ts).
-- **Admin** — Sign in at `/admin/login`. `/admin` lists sign-ups filtered by workshop and status; each can be marked accepted, on hold or declined, with notes. Protected by `middleware.ts` and NextAuth credentials auth.
+- **Workshop signups** — `/admin/signups` lists sign-ups filtered by workshop and status; each can be marked accepted, on hold or declined, with notes.
+
+## Client portal
+
+Accounts live in the `users` table with a role of `admin` or `client`; everyone signs in at `/login` and lands in their own area.
+
+**Admin (`/admin`)**
+- **Overview** — active clients, unread messages, sessions in the next 7 days and new discovery requests.
+- **Discovery requests** — "Work with … & send invite" turns a request into a client and emails them a link to create their account. Their discovery answers stay attached as their goals.
+- **Clients** — portal status (no account / invited / active), next session and unread messages at a glance. Clients can also be added directly.
+- **Client page** — messages, notes (private, or shared with the client as an update), sessions (UK time, with an optional meeting link), goals, and status (active / paused / completed). Invites can be resent from here.
+
+**Client (`/portal`)** — next session, latest update, goals, all sessions, all shared updates, messages with the coach, and account settings.
+
+**Emails** (via Resend, from `EMAIL_FROM`) — account invites, password resets, and notifications for new messages, shared updates and booked sessions. To avoid an email per message, a message only triggers an email when the recipient has nothing else unread. Without `RESEND_API_KEY`, emails are logged to the server console and the admin sees invite links on screen to send themselves.
+
+**Security**
+- Invite and reset links are single-use, stored only as hashes, and expire after 7 days (invites) or 1 hour (resets). Issuing a new link cancels the old one.
+- Passwords are bcrypt-hashed, at least 10 characters. Changing or resetting a password signs out every other session.
+- Login and reset requests are rate-limited.
+- `middleware.ts` routes people by role, and every page and server action re-checks the user against the database ([`lib/dal.ts`](lib/dal.ts)).
+
+**Admin accounts** are created from the command line — there's no public sign-up:
+
+```bash
+npm run admin:create -- monika@example.com "Monika Kozlowska"
+```
+
+It prints a one-time link to set a password. Running it again for an existing admin issues a fresh link (useful if one expires).
 
 ## Database
 
 SQLite via [Drizzle ORM](https://orm.drizzle.team) and `better-sqlite3`. The default file is `data/app.db` (git-ignored); override it with `SQLITE_PATH`.
 
-- Schema: [`lib/db/schema.ts`](lib/db/schema.ts). Tables are `workshops` and `signups`.
+- Schema: [`lib/db/schema.ts`](lib/db/schema.ts). Tables: `workshops`, `signups`, `discovery_calls`, and for the portal `clients`, `users`, `password_tokens`, `client_notes`, `coaching_sessions` and `messages`.
 - After changing the schema: `npm run db:generate` to write a migration into `drizzle/`, then `npm run db:migrate`.
 - `npm run db:seed` inserts the `value-selling` workshop if it doesn't already exist.
 
-The `db:*` scripts don't load `.env.local`. If you use a custom `SQLITE_PATH`, or want the seeded workshop to store Stripe IDs, pass the values inline:
-
-```bash
-SQLITE_PATH=data/app.db STRIPE_PRICE_ID=price_123 npm run db:seed
-```
+The `db:*` and `admin:create` scripts read `.env.local`, so `SQLITE_PATH` and Stripe IDs set there are picked up.
 
 ## Project structure
 
@@ -60,23 +83,26 @@ SQLITE_PATH=data/app.db STRIPE_PRICE_ID=price_123 npm run db:seed
 │   ├── page.tsx                 # Home — book a discovery call
 │   ├── discovery-call/          # Discovery call form
 │   ├── workshop/                # Value Selling Workshop + checkout
-│   ├── client-login/            # Placeholder
+│   ├── login/, forgot-password/, set-password/  # Sign-in pages
+│   ├── portal/                  # Client area
+│   ├── actions/                 # Server actions (auth, admin, portal)
 │   ├── landing/                 # About Coach Skill
 │   ├── meet-monika/             # Coach profile
-│   ├── admin/                   # Dashboard + login
+│   ├── admin/                   # Admin area: overview, clients, discovery requests, signups
 │   └── api/
 │       ├── create-checkout-session/
 │       ├── stripe-webhook/
 │       ├── webhooks/n8n/
 │       ├── admin/signups/       # List + update sign-ups (auth required)
 │       └── auth/[...nextauth]/
-├── components/                  # Page sections, checkout button/banner, admin table
+├── components/                  # Page sections, checkout, discovery flow, admin/portal/auth UI
 ├── contexts/CheckoutContext.tsx # Checkout modal state
 ├── lib/db/                      # Drizzle client, schema, queries
+├── lib/                         # Accounts, access checks (dal), portal queries, email, spam protection
 ├── drizzle/                     # SQL migrations
-├── scripts/                     # migrate + seed
+├── scripts/                     # migrate, seed, create-admin
 ├── auth.ts                      # NextAuth config
-├── middleware.ts                # Guards /admin
+├── middleware.ts                # Routes /admin and /portal by role
 └── public/assets/               # Logo, poster, coach portrait
 ```
 
@@ -90,3 +116,4 @@ SQLITE_PATH=data/app.db STRIPE_PRICE_ID=price_123 npm run db:seed
 | `npm run db:generate` | Generate a migration from schema changes |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Seed the default workshop |
+| `npm run admin:create -- <email> "<name>"` | Create an admin (or re-issue their set-password link) |

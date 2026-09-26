@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { adminOrNull } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { signups } from "@/lib/db/schema";
 import { getSignupById } from "@/lib/db/queries";
@@ -11,8 +11,7 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session) {
+  if (!(await adminOrNull())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

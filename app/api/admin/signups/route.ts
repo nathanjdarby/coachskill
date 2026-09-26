@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { adminOrNull } from "@/lib/dal";
 import { listSignupsWithWorkshop } from "@/lib/db/queries";
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session) {
+  if (!(await adminOrNull())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
