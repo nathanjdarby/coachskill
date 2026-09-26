@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -414,7 +415,13 @@ export default function LandingPage() {
         <section className="section" id="contact">
           <div className="container coach-grid">
             <div className="coach-portrait-wrap is-visible">
-              <img src="/assets/coach-portrait.png" alt="Monika Kozlowska" className="coach-portrait" />
+              <Image
+                src="/assets/coach-portrait.png"
+                alt="Monika Kozlowska"
+                className="coach-portrait"
+                width={280}
+                height={373}
+              />
             </div>
             <div className="coach-info">
               <h2>Monika Kozlowska, MA, BA</h2>

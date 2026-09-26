@@ -5,17 +5,18 @@ import { useEffect, useState } from "react";
 
 export function CheckoutBanner() {
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<"success" | "canceled" | null>(null);
+  // Read the Stripe redirect param once on mount; it's cleared from the URL below
+  const [status, setStatus] = useState<"success" | "canceled" | null>(() => {
+    const checkout = searchParams.get("checkout");
+    return checkout === "success" || checkout === "canceled" ? checkout : null;
+  });
 
   useEffect(() => {
-    const checkout = searchParams.get("checkout");
-    if (checkout === "success" || checkout === "canceled") {
-      setStatus(checkout);
-      // Clear query from URL without reload
-      const url = new URL(window.location.href);
-      url.searchParams.delete("checkout");
-      window.history.replaceState({}, "", url.pathname);
-    }
+    if (!searchParams.has("checkout")) return;
+    // Clear query from URL without reload
+    const url = new URL(window.location.href);
+    url.searchParams.delete("checkout");
+    window.history.replaceState({}, "", url.pathname);
   }, [searchParams]);
 
   if (!status) return null;

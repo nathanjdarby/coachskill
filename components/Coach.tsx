@@ -44,7 +44,7 @@ export function Coach() {
             <p className="title">Sales Strategy · Value Selling · Presentations</p>
             <p>
               An accomplished expert in sales strategy, value-based
-              communication and impactful presentations, with over 18 years'
+              communication and impactful presentations, with over 18 years&apos;
               international experience across the UK, Asia and the USA.
             </p>
             <p>
