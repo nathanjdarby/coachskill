@@ -76,6 +76,25 @@ SQLite via [Drizzle ORM](https://orm.drizzle.team) and `better-sqlite3`. The def
 
 The `db:*` and `admin:create` scripts read `.env.local`, so `SQLITE_PATH` and Stripe IDs set there are picked up.
 
+## Deploying
+
+The live site (https://coachskill.co.uk) runs on a Linode server under pm2, behind nginx with a Let's Encrypt certificate. To deploy whatever is on GitHub's `main`:
+
+```bash
+git push
+./scripts/deploy.sh
+```
+
+The server clones the new commit into its own release folder, installs dependencies (reusing the previous ones if `package-lock.json` hasn't changed), builds, backs up the database, runs migrations, then switches over and restarts. The old release keeps serving until the switch, and if the new one fails its health check it switches straight back. `./scripts/deploy.sh rollback` returns to the previous release (database migrations aren't undone, so keep them additive).
+
+Server layout (`/opt/coachskill`): `releases/` (last 5), `current` → the live release, `shared/.env.local` (live settings), `shared/data/app.db` (live database), `backups/` (last 20 database backups). SSH access uses the `coachskill-live` host alias with the `~/.ssh/coachskill_deploy` key.
+
+Server-side tasks, e.g. creating an admin:
+
+```bash
+ssh coachskill-live 'cd /opt/coachskill/current && npm run admin:create -- monika@example.com "Monika Kozlowska"'
+```
+
 ## Project structure
 
 ```
@@ -100,7 +119,8 @@ The `db:*` and `admin:create` scripts read `.env.local`, so `SQLITE_PATH` and St
 ├── lib/db/                      # Drizzle client, schema, queries
 ├── lib/                         # Accounts, access checks (dal), portal queries, email, spam protection
 ├── drizzle/                     # SQL migrations
-├── scripts/                     # migrate, seed, create-admin
+├── scripts/                     # migrate, seed, create-admin, deploy.sh
+├── ecosystem.config.cjs         # pm2 config for the live server
 ├── auth.ts                      # NextAuth config
 ├── middleware.ts                # Routes /admin and /portal by role
 └── public/assets/               # Logo, poster, coach portrait

@@ -72,9 +72,11 @@ export function rateLimit(key: string, limit: number, windowMs: number, now = Da
 }
 
 export function clientIp(headers: Headers): string {
+  // Prefer X-Real-IP: nginx sets it to the connecting address, whereas
+  // X-Forwarded-For keeps whatever the client sent and so can be spoofed.
   return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-real-ip")?.trim() ||
+    headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ||
     "unknown"
   );
 }
