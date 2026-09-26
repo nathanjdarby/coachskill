@@ -70,6 +70,24 @@ function writeSaved(saved: Saved | null): boolean {
   }
 }
 
+type FormToken = { token: string; receivedAt: number };
+
+// The server rejects submissions sent within a few seconds of the token being
+// issued (a bot tell), so wait out that window before sending.
+const TOKEN_MIN_WAIT_MS = 5_000;
+
+async function requestToken(): Promise<FormToken | null> {
+  try {
+    const res = await fetch("/api/discovery-call", { cache: "no-store" });
+    const data = (await res.json()) as { token?: unknown };
+    return typeof data.token === "string"
+      ? { token: data.token, receivedAt: Date.now() }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function DiscoveryFlow() {
   const savedRaw = useSyncExternalStore(subscribeStorage, readSavedRaw, () => null);
   const saved = useMemo(() => parseSaved(savedRaw), [savedRaw]);
@@ -84,7 +102,19 @@ export function DiscoveryFlow() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tokenRef = useRef<FormToken | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void requestToken().then((t) => {
+      if (!cancelled && t) tokenRef.current = t;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const index = Math.max(0, STEPS.indexOf(step));
   const question = questions.find((q) => q.id === step) ?? null;
@@ -158,20 +188,39 @@ export function DiscoveryFlow() {
 
   const canContinue = !question || question.optional || isAnswered(question, answers);
 
+  async function readyToken(): Promise<string | null> {
+    const t = tokenRef.current ?? (tokenRef.current = await requestToken());
+    if (!t) return null;
+    const wait = TOKEN_MIN_WAIT_MS - (Date.now() - t.receivedAt);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    return t.token;
+  }
+
+  async function post(token: string | null) {
+    const res = await fetch("/api/discovery-call", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers, token, website: honeypot }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      code?: string;
+      missing?: string[];
+    };
+    return { res, data };
+  }
+
   async function submit() {
     if (submitting) return;
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const res = await fetch("/api/discovery-call", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        missing?: string[];
-      };
+      let { res, data } = await post(await readyToken());
+      if (data.code === "token") {
+        // Token expired (e.g. the tab was left open) — get a fresh one and retry once.
+        tokenRef.current = null;
+        ({ res, data } = await post(await readyToken()));
+      }
       if (res.ok) {
         writeSaved(null);
         setSubmittedEmail(answers.email ?? "");
@@ -327,6 +376,8 @@ export function DiscoveryFlow() {
           {step === "review" && (
             <Review
               answers={answers}
+              honeypot={honeypot}
+              onHoneypot={setHoneypot}
               error={submitError}
               submitting={submitting}
               onEdit={(id) => {
@@ -579,6 +630,8 @@ function QuestionScreen({
 
 function Review({
   answers,
+  honeypot,
+  onHoneypot,
   error,
   submitting,
   onEdit,
@@ -586,6 +639,8 @@ function Review({
   onSubmit,
 }: {
   answers: Answers;
+  honeypot: string;
+  onHoneypot: (v: string) => void;
   error: string | null;
   submitting: boolean;
   onEdit: (id: string) => void;
@@ -637,6 +692,21 @@ function Review({
             </dl>
           </section>
         ))}
+      </div>
+
+      {/* Honeypot: hidden from people, filled in by form-filling bots. */}
+      <div className="onb-hp" aria-hidden="true">
+        <label>
+          Website
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => onHoneypot(e.target.value)}
+          />
+        </label>
       </div>
 
       {error && (

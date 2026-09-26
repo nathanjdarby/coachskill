@@ -36,6 +36,7 @@ A bcrypt hash must have every `$` escaped as `\$` in `.env.local`, or Next will 
 - **Sign-ups** — Stored in SQLite (`signups` table), created by:
   - **Stripe** — `checkout.session.completed` events on `POST /api/stripe-webhook`. In Stripe Dashboard → Developers → Webhooks, point an endpoint at `https://your-domain.com/api/stripe-webhook`. Locally, use `stripe listen --forward-to localhost:3000/api/stripe-webhook`.
   - **n8n** — `POST /api/webhooks/n8n` with `Authorization: Bearer <N8N_WEBHOOK_SECRET>` (or `X-Webhook-Secret`) and a JSON body `{ "workshopSlug", "name", "email", "id" }`, plus optional `phone` and `company`. `id` makes retries idempotent.
+- **Discovery call spam protection** — `POST /api/discovery-call` requires a signed, time-stamped token from `GET /api/discovery-call` (signed with `AUTH_SECRET`), allows 5 submissions per IP per hour, and quietly drops submissions that fill the hidden honeypot field, arrive within 4 seconds of the token, or contain more than 2 links. See [`lib/spam.ts`](lib/spam.ts).
 - **Admin** — Sign in at `/admin/login`. `/admin` lists sign-ups filtered by workshop and status; each can be marked accepted, on hold or declined, with notes. Protected by `middleware.ts` and NextAuth credentials auth.
 
 ## Database
