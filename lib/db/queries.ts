@@ -1,6 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./index";
-import { workshops, signups, type Signup } from "./schema";
+import { workshops, signups, discoveryCalls, type Signup } from "./schema";
 
 export async function getWorkshopBySlug(slug: string) {
   const db = getDb();
@@ -94,4 +94,9 @@ export async function getSignupById(id: number) {
   const db = getDb();
   const rows = await db.select().from(signups).where(eq(signups.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+export async function listDiscoveryCalls() {
+  const db = getDb();
+  return db.select().from(discoveryCalls).orderBy(desc(discoveryCalls.createdAt));
 }

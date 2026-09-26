@@ -47,6 +47,21 @@ export const signups = sqliteTable(
   }),
 );
 
+export const discoveryCalls = sqliteTable("discovery_calls", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  company: text("company").notNull(),
+  persona: text("persona", {
+    enum: ["professional", "business_owner", "corporate"],
+  }).notNull(),
+  goal: text("goal").notNull(),
+  challenges: text("challenges").notNull(),
+  anythingElse: text("anything_else"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export type Workshop = typeof workshops.$inferSelect;
 export type Signup = typeof signups.$inferSelect;
 export type NewSignup = typeof signups.$inferInsert;
+export type DiscoveryCall = typeof discoveryCalls.$inferSelect;

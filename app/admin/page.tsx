@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { listSignupsWithWorkshop, listWorkshops } from "@/lib/db/queries";
@@ -36,7 +37,8 @@ export default async function AdminPage({
           <h1>Workshop signups</h1>
           <p className="admin-muted">
             Review signups from Stripe, n8n, or other sources. Use filters to
-            narrow the list.
+            narrow the list.{" "}
+            <Link href="/admin/discovery">Discovery call requests →</Link>
           </p>
         </div>
         <SignOutButton />
