@@ -11,7 +11,7 @@ export function Footer() {
           width={96}
           height={32}
         />
-        <p>© Coach Skill 2026 · Value Selling Workshop</p>
+        <p>© Coach Skill 2026</p>
       </div>
     </footer>
   );

@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const workshopUrl = `${baseUrl.replace(/\/+$/, "")}/workshop`;
     const workshopSlug =
       process.env.DEFAULT_WORKSHOP_SLUG?.trim() || "value-selling";
 
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
       line_items: lineItems,
       customer_email: email.trim(),
       client_reference_id: name.trim(),
-      success_url: `${baseUrl}?checkout=success`,
-      cancel_url: `${baseUrl}?checkout=canceled`,
+      success_url: `${workshopUrl}?checkout=success`,
+      cancel_url: `${workshopUrl}?checkout=canceled`,
       metadata: {
         customer_name: name.trim(),
         workshop_slug: workshopSlug,

@@ -31,8 +31,8 @@ A bcrypt hash must have every `$` escaped as `\$` in `.env.local`, or Next will 
 
 ## Features
 
-- **Pages** — `/` (workshop landing + checkout), `/meet-monika` (coach profile), `/landing` (About Coach Skill).
-- **Checkout** — "Secure your place" collects name and email, then redirects to Stripe Checkout for the £25 deposit. Uses `STRIPE_PRICE_ID` if set, otherwise an inline £25 price. On return, `?checkout=success|canceled` shows a banner.
+- **Pages** — `/` (book a discovery call), `/discovery-call` (step-by-step discovery call form), `/workshop` (Value Selling Workshop + checkout), `/meet-monika` (coach profile), `/landing` (About Coach Skill), `/client-login` (placeholder until client accounts exist).
+- **Checkout** — "Secure your place" collects name and email, then redirects to Stripe Checkout for the £25 deposit. Uses `STRIPE_PRICE_ID` if set, otherwise an inline £25 price. On return to `/workshop`, `?checkout=success|canceled` shows a banner.
 - **Sign-ups** — Stored in SQLite (`signups` table), created by:
   - **Stripe** — `checkout.session.completed` events on `POST /api/stripe-webhook`. In Stripe Dashboard → Developers → Webhooks, point an endpoint at `https://your-domain.com/api/stripe-webhook`. Locally, use `stripe listen --forward-to localhost:3000/api/stripe-webhook`.
   - **n8n** — `POST /api/webhooks/n8n` with `Authorization: Bearer <N8N_WEBHOOK_SECRET>` (or `X-Webhook-Secret`) and a JSON body `{ "workshopSlug", "name", "email", "id" }`, plus optional `phone` and `company`. `id` makes retries idempotent.
@@ -56,7 +56,10 @@ SQLITE_PATH=data/app.db STRIPE_PRICE_ID=price_123 npm run db:seed
 
 ```
 ├── app/
-│   ├── page.tsx                 # Home — workshop landing
+│   ├── page.tsx                 # Home — book a discovery call
+│   ├── discovery-call/          # Discovery call form
+│   ├── workshop/                # Value Selling Workshop + checkout
+│   ├── client-login/            # Placeholder
 │   ├── landing/                 # About Coach Skill
 │   ├── meet-monika/             # Coach profile
 │   ├── admin/                   # Dashboard + login

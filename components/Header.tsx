@@ -21,10 +21,16 @@ export function Header() {
           <Link href="/meet-monika" className="header-link">
             Meet Monika
           </Link>
+          <Link href="/workshop" className="header-link">
+            Workshop
+          </Link>
           <Link href="/landing" className="header-link">
             About Coach Skill
           </Link>
         </nav>
+        <Link href="/client-login" className="header-link header-login">
+          Client login
+        </Link>
       </div>
     </header>
   );

@@ -154,7 +154,7 @@ export default function MeetMonikaPage() {
               Join Monika&apos;s focused 2.5-hour workshop and transform how you
               pitch—from feature-heavy explanations to value-led storytelling.
             </p>
-            <Link href="/" className="cta cta-hero">
+            <Link href="/workshop" className="cta cta-hero">
               Secure your place — £25 deposit
             </Link>
           </div>

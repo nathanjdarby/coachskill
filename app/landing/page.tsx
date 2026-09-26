@@ -350,7 +350,7 @@ export default function LandingPage() {
                   <li>A mentor in your corner</li>
                   <li>Visible growth in communication, confidence and presence</li>
                 </ul>
-                <a className="cta" href="#contact">Book a discovery call</a>
+                <a className="cta" href="/discovery-call">Book a discovery call</a>
               </article>
 
               <article className="option-card">

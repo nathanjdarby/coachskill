@@ -3,9 +3,9 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Value Selling Workshop Deposit | Coach Skill",
+  title: "Coach Skill | Book a discovery call with Monika Kozlowska",
   description:
-    "A focused 2.5-hour workshop that transforms how you pitch—from feature-heavy explanations to value-led storytelling.",
+    "Sales coaching, value selling and presentation training with Monika Kozlowska. Book a discovery call.",
 };
 
 export default function RootLayout({
