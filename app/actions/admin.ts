@@ -127,6 +127,35 @@ export async function becomeClient(discoveryCallId: number): Promise<FormState> 
   return { ok: true, fields: { clientId: String(created.client.id) } };
 }
 
+/** Marks a discovery request as not taken forward (or, with `declined: false`, restores it). */
+export async function setDiscoveryDeclined(discoveryCallId: number, declined: boolean): Promise<FormState> {
+  await requireAdmin();
+  const db = getDb();
+  const [client] = await db.select().from(clients).where(eq(clients.discoveryCallId, discoveryCallId)).limit(1);
+  if (client) return { ok: false, message: `${client.fullName} is already a client.` };
+  await db
+    .update(discoveryCalls)
+    .set({ declinedAt: declined ? new Date() : null })
+    .where(eq(discoveryCalls.id, discoveryCallId));
+  revalidatePath("/admin/discovery");
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
+/** Permanently deletes a discovery request that hasn't become a client. */
+export async function deleteDiscoveryCall(discoveryCallId: number): Promise<FormState> {
+  await requireAdmin();
+  const db = getDb();
+  const [client] = await db.select().from(clients).where(eq(clients.discoveryCallId, discoveryCallId)).limit(1);
+  if (client) {
+    return { ok: false, message: `This request is linked to ${client.fullName}'s client record, so it can't be deleted.` };
+  }
+  await db.delete(discoveryCalls).where(eq(discoveryCalls.id, discoveryCallId));
+  revalidatePath("/admin/discovery");
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
 export async function addClient(_state: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
   const fields = {

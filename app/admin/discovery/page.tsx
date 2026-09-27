@@ -23,13 +23,19 @@ export default async function AdminDiscoveryPage() {
       ) : (
         <div className="pt-stack">
           {rows.map(({ call, clientId }) => (
-            <Disclosure key={call.id} id={`request-${call.id}`} className="pt-card pt-details" defaultOpen={!clientId}>
+            <Disclosure key={call.id} id={`request-${call.id}`} className="pt-card pt-details" defaultOpen={!clientId && !call.declinedAt}>
               <summary>
                 <span className="pt-details-title">{call.fullName}</span>
                 <span className="pt-muted pt-small">
                   {call.company} · {personaLabel(call.persona)}
                 </span>
-                {clientId ? <span className="pt-badge is-ok">Client</span> : <span className="pt-badge is-accent">New</span>}
+                {clientId ? (
+                  <span className="pt-badge is-ok">Client</span>
+                ) : call.declinedAt ? (
+                  <span className="pt-badge">Declined</span>
+                ) : (
+                  <span className="pt-badge is-accent">New</span>
+                )}
                 <span className="pt-muted pt-small pt-push">{formatDateTime(call.createdAt)}</span>
               </summary>
               <dl className="pt-dl">
@@ -47,7 +53,13 @@ export default async function AdminDiscoveryPage() {
                 <dd>{call.anythingElse || <span className="pt-muted">—</span>}</dd>
               </dl>
               <div className="pt-details-actions">
-                <DiscoveryActions discoveryCallId={call.id} name={call.fullName} email={call.email} clientId={clientId} />
+                <DiscoveryActions
+                  discoveryCallId={call.id}
+                  name={call.fullName}
+                  email={call.email}
+                  clientId={clientId}
+                  declined={Boolean(call.declinedAt)}
+                />
               </div>
             </Disclosure>
           ))}

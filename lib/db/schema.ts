@@ -80,6 +80,8 @@ export const discoveryCalls = sqliteTable("discovery_calls", {
   goal: text("goal").notNull(),
   challenges: text("challenges").notNull(),
   anythingElse: text("anything_else"),
+  /** Set when the admin decides not to take this request forward. */
+  declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 

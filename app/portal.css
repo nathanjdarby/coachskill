@@ -507,6 +507,13 @@ header.pt-topbar {
   gap: 10px;
 }
 
+.pt-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .pt-alert {
   display: flex;
   flex-direction: column;

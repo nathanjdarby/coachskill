@@ -82,7 +82,7 @@ export async function adminDashboardCounts() {
       .select({ n: sql<number>`count(*)` })
       .from(discoveryCalls)
       .leftJoin(clients, eq(clients.discoveryCallId, discoveryCalls.id))
-      .where(isNull(clients.id)),
+      .where(and(isNull(clients.id), isNull(discoveryCalls.declinedAt))),
   ]);
   return {
     activeClients: active.n,

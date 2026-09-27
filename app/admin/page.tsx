@@ -20,7 +20,7 @@ export default async function AdminOverviewPage() {
     .filter((c) => c.nextSession)
     .sort((a, b) => a.nextSession!.startsAt.getTime() - b.nextSession!.startsAt.getTime())
     .slice(0, 5);
-  const newRequests = requests.filter((r) => !r.clientId).slice(0, 5);
+  const newRequests = requests.filter((r) => !r.clientId && !r.call.declinedAt).slice(0, 5);
 
   const stats = [
     { label: "Active clients", value: counts.activeClients, href: "/admin/clients" },

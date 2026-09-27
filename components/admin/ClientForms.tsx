@@ -9,7 +9,9 @@ import {
   addSession,
   becomeClient,
   deleteClient,
+  deleteDiscoveryCall,
   inviteClient,
+  setDiscoveryDeclined,
   updateClient,
 } from "@/app/actions/admin";
 import type { FormState } from "@/app/actions/types";
@@ -107,13 +109,22 @@ export function DiscoveryActions({
   name,
   email,
   clientId: existingClientId,
+  declined,
 }: {
   discoveryCallId: number;
   name: string;
   email: string;
   clientId: number | null;
+  declined: boolean;
 }) {
   const [state, action] = useActionState(becomeClient.bind(null, discoveryCallId), undefined);
+  const [declineState, declineAction] = useActionState(
+    setDiscoveryDeclined.bind(null, discoveryCallId, !declined),
+    undefined,
+  );
+  const [deleteState, deleteAction] = useActionState(deleteDiscoveryCall.bind(null, discoveryCallId), undefined);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const firstName = name.split(/\s+/)[0];
   const newClientId = state?.ok ? Number(state.fields?.clientId) : null;
   const clientId = newClientId ?? existingClientId;
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -127,12 +138,38 @@ export function DiscoveryActions({
         <Link href={`/admin/clients/${clientId}`} className="pt-btn pt-btn-secondary">
           Open client →
         </Link>
+      ) : confirmingDelete ? (
+        <div className="pt-btn-row">
+          <span className="pt-small">Delete {firstName}&apos;s request permanently?</span>
+          <form action={deleteAction}>
+            <SubmitButton pendingLabel="Deleting…" variant="danger">
+              Yes, delete
+            </SubmitButton>
+          </form>
+          <button type="button" className="pt-btn pt-btn-secondary" onClick={() => setConfirmingDelete(false)}>
+            Cancel
+          </button>
+        </div>
       ) : (
-        <form action={action}>
-          <SubmitButton pendingLabel="Adding…">Work with {name.split(/\s+/)[0]}</SubmitButton>
-        </form>
+        <div className="pt-btn-row">
+          {!declined && (
+            <form action={action}>
+              <SubmitButton pendingLabel="Adding…">Work with {firstName}</SubmitButton>
+            </form>
+          )}
+          <form action={declineAction}>
+            <SubmitButton pendingLabel="Saving…" variant="secondary">
+              {declined ? "Restore request" : "Decline"}
+            </SubmitButton>
+          </form>
+          <button type="button" className="pt-btn pt-btn-danger" onClick={() => setConfirmingDelete(true)}>
+            Delete
+          </button>
+        </div>
       )}
       {!state?.ok && <FormMessage state={state} />}
+      {!declineState?.ok && <FormMessage state={declineState} />}
+      {!deleteState?.ok && <FormMessage state={deleteState} />}
       {newClientId && (
         <InviteDialog
           clientId={newClientId}
