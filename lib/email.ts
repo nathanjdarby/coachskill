@@ -330,3 +330,13 @@ export function emailPackagePurchased(input: { to: string; name: string; package
     footnote: "Your payment receipt comes separately from Stripe.",
   });
 }
+
+export function emailNewResource(input: { to: string; name: string; title: string; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `New resource from Monika: ${input.title}`,
+    heading: `Hi ${firstName(input.name)}, I've shared something with you`,
+    paragraphs: [`"${input.title}" is now in the Resources section of your client area.`],
+    button: { label: "Open resources", url: input.url },
+  });
+}

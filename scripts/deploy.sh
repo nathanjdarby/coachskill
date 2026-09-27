@@ -13,7 +13,8 @@
 #   /opt/coachskill/current                 symlink to the live release
 #   /opt/coachskill/shared/.env.local       live settings (never in git)
 #   /opt/coachskill/shared/data/app.db      live database
-#   /opt/coachskill/backups/                database backup before each deploy
+#   /opt/coachskill/shared/uploads/         resource library files (UPLOADS_DIR)
+#   /opt/coachskill/backups/                database (and uploads) backup before each deploy
 #
 # Each deploy builds in a fresh folder while the old release keeps serving,
 # backs up the database, runs migrations, then switches the symlink and
@@ -117,6 +118,11 @@ node -e '
   db.backup(process.argv[2]).then(() => db.close());
 ' "$BASE/shared/data/app.db" "$BASE/backups/app-$(date +%Y%m%d-%H%M%S)-${sha:0:7}.db"
 ls -1t "$BASE"/backups/app-*.db | tail -n +21 | xargs -r rm -f
+if [ -d "$BASE/shared/uploads" ] && [ -n "$(ls -A "$BASE/shared/uploads")" ]; then
+  echo "   backing up uploads…"
+  tar -czf "$BASE/backups/uploads-$(date +%Y%m%d-%H%M%S)-${sha:0:7}.tgz" -C "$BASE/shared" uploads
+  ls -1t "$BASE"/backups/uploads-*.tgz | tail -n +6 | xargs -r rm -f
+fi
 
 echo "   running migrations…"
 npm run --silent db:migrate

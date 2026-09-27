@@ -1381,6 +1381,114 @@ fieldset.pt-field {
   outline: 2px solid var(--accent-cyan);
 }
 
+/* Resources */
+.pt-segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-deep);
+  align-self: flex-start;
+}
+
+.pt-segmented label {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pt-segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pt-segmented label.is-selected {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.pt-share-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pt-share-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  font-size: 0.8125rem;
+}
+
+.pt-resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+
+.pt-resource {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.pt-resource:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.pt-resource-type {
+  flex: none;
+  width: 56px;
+  padding: 8px 0;
+  border-radius: 10px;
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--accent-cyan);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pt-resource-type.is-pdf {
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+}
+
+.pt-resource-type.is-link {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+.pt-resource-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pt-resource-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 /* ==========================================================================
    Client portal + admin: app layout on mobile
    ========================================================================== */
@@ -1471,7 +1579,8 @@ fieldset.pt-field {
     margin: 0;
     padding: 0 0 env(safe-area-inset-bottom);
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 0;
     overflow: visible;
     background: rgba(10, 15, 26, 0.95);

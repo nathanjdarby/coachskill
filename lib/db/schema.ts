@@ -254,6 +254,36 @@ export const messages = sqliteTable("messages", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/** A file (stored on disk) or link Monika shares with clients. */
+export const resources = sqliteTable("resources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  description: text("description"),
+  kind: text("kind", { enum: ["file", "link"] }).notNull(),
+  /** Random file name under UPLOADS_DIR; never the uploaded name. */
+  storageKey: text("storage_key").unique(),
+  originalName: text("original_name"),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes"),
+  url: text("url"),
+  createdById: integer("created_by_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** Who can see a resource: one client, every client, or a workshop run's attendees. */
+export const resourceShares = sqliteTable("resource_shares", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  resourceId: integer("resource_id")
+    .notNull()
+    .references(() => resources.id, { onDelete: "cascade" }),
+  scope: text("scope", { enum: ["client", "all_clients", "workshop"] }).notNull(),
+  clientId: integer("client_id").references(() => clients.id),
+  workshopId: integer("workshop_id").references(() => workshops.id),
+});
+
 export type Client = typeof clients.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type ClientNote = typeof clientNotes.$inferSelect;
@@ -263,3 +293,5 @@ export type Message = typeof messages.$inferSelect;
 export type Package = typeof packages.$inferSelect;
 export type ClientPackage = typeof clientPackages.$inferSelect;
 export type BookingSettings = typeof bookingSettings.$inferSelect;
+export type Resource = typeof resources.$inferSelect;
+export type ResourceShare = typeof resourceShares.$inferSelect;

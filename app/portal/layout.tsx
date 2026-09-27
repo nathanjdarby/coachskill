@@ -43,6 +43,10 @@ export default async function PortalLayout({ children }: { children: React.React
             <TabIcon name="updates" />
             <span>Updates</span>
           </NavLink>
+          <NavLink href="/portal/resources">
+            <TabIcon name="resources" />
+            <span>Resources</span>
+          </NavLink>
           <NavLink href="/portal/messages">
             <TabIcon name="messages" />
             <span>Messages</span>

@@ -43,6 +43,13 @@
       "when": 1790519020858,
       "tag": "0005_calm_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790519940195,
+      "tag": "0006_puzzling_vapor",
+      "breakpoints": true
     }
   ]
 }

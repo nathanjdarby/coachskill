@@ -44,3 +44,5 @@ next-env.d.ts
 # local SQLite
 /data/*.db
 /data/*.db-*
+# Uploaded resource files (UPLOADS_DIR on the server)
+/data/uploads/
