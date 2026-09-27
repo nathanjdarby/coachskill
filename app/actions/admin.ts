@@ -28,6 +28,8 @@ import {
 } from "@/lib/email";
 import { packageBalances } from "@/lib/packages";
 import { hasEarlierUnread, portalAccess } from "@/lib/portal";
+import { COACHING_SLUG, getEventType, getEventTypeBySlug } from "@/lib/event-types";
+import { resolveMeetingUrl } from "@/lib/meeting";
 import { notifySessionChange } from "@/lib/session-notify";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
@@ -266,8 +268,11 @@ export async function addSession(clientId: number, _state: FormState, formData: 
     startsAt: text(formData, "startsAt", 40),
     durationMinutes: text(formData, "durationMinutes", 5),
     meetingUrl: text(formData, "meetingUrl", 500),
+    eventTypeId: text(formData, "eventTypeId", 10),
   };
   const errors: Record<string, string> = {};
+  const eventType = fields.eventTypeId ? getEventType(Number(fields.eventTypeId)) : getEventTypeBySlug(COACHING_SLUG);
+  if (fields.eventTypeId && !eventType) errors.eventTypeId = "Choose a type.";
   const startsAt = parseLondonDateTime(fields.startsAt);
   const duration = Number(fields.durationMinutes);
   if (!fields.title) errors.title = "Give the session a title.";
@@ -290,10 +295,13 @@ export async function addSession(clientId: number, _state: FormState, formData: 
     .values({
       clientId,
       clientPackageId,
+      eventTypeId: eventType?.id ?? null,
+      locationMode: fields.meetingUrl ? "custom" : (eventType?.locationMode ?? "custom"),
       title: fields.title,
       startsAt,
       durationMinutes: duration,
-      meetingUrl: fields.meetingUrl || null,
+      // Blank means the event type decides: usually a fresh private video room.
+      meetingUrl: resolveMeetingUrl(eventType, fields.meetingUrl),
       bookedBy: "admin",
       createdAt: new Date(),
       updatedAt: new Date(),

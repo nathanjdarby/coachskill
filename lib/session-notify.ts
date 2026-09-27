@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { clients, coachingSessions, users } from "@/lib/db/schema";
 import { emailAdminBooking, emailSessionBooked, emailSessionCancelled, emailSessionRescheduled } from "@/lib/email";
 import { icsAttachment } from "@/lib/ics";
+import { joinNote } from "@/lib/meeting";
 import { adminEmails } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
@@ -61,7 +62,11 @@ export async function notifySessionChange(sessionId: number, change: Change, act
       await emailAdminBooking({
         to,
         subject: `${client.fullName} ${verb} a session`,
-        lines: [`${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`],
+        lines: [
+          `${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`,
+          ...(session.meetingUrl && change !== "cancelled" ? [`Join: ${session.meetingUrl}`] : []),
+          ...(change !== "cancelled" && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
+        ],
         url: await appUrl(`/admin/clients/${client.id}#sessions`),
         attachments: [ics],
       });

@@ -7,6 +7,8 @@ import { canClientChange, creditPackageSync, getBookingSettings, isSlotAvailable
 import { requireAdmin, requireClient } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { availabilityBlocks, availabilityRules, bookingSettings, coachingSessions } from "@/lib/db/schema";
+import { COACHING_SLUG, durationFor, getEventType, getEventTypeBySlug } from "@/lib/event-types";
+import { resolveMeetingUrl } from "@/lib/meeting";
 import { notifySessionChange } from "@/lib/session-notify";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
@@ -37,7 +39,11 @@ export async function bookSession(_state: FormState, formData: FormData): Promis
   const result = db.transaction(() => {
     const credit = creditPackageSync(user.clientId);
     if (!credit) return { error: "You don't have any sessions left in a package." } as const;
-    if (!isSlotAvailable(startsAt, credit.sessionMinutes)) return { error: "Sorry, that time has just been taken. Please pick another." } as const;
+    const type = getEventTypeBySlug(COACHING_SLUG);
+    const duration = durationFor(type, credit.sessionMinutes);
+    if (!isSlotAvailable(startsAt, duration, undefined, type?.bufferMinutes)) {
+      return { error: "Sorry, that time has just been taken. Please pick another." } as const;
+    }
     const settings = getBookingSettings();
     const now = new Date();
     const session = db
@@ -45,10 +51,13 @@ export async function bookSession(_state: FormState, formData: FormData): Promis
       .values({
         clientId: user.clientId,
         clientPackageId: credit.id,
-        title: "Coaching session",
+        eventTypeId: type?.id ?? null,
+        title: type?.name ?? "Coaching session",
         startsAt,
-        durationMinutes: credit.sessionMinutes,
-        meetingUrl: settings.defaultMeetingUrl,
+        durationMinutes: duration,
+        // A custom-link type without a URL falls back to the old default meeting link.
+        meetingUrl: resolveMeetingUrl(type) ?? settings.defaultMeetingUrl,
+        locationMode: type?.locationMode ?? "custom",
         bookedBy: "client",
         createdAt: now,
         updatedAt: now,
@@ -82,7 +91,8 @@ export async function rescheduleSession(sessionId: number, _state: FormState, fo
     if (!canClientChange(session.startsAt, settings)) {
       return { error: `Sessions can't be moved within ${settings.cancelCutoffHours} hours. Please message Monika.` } as const;
     }
-    if (!isSlotAvailable(startsAt, session.durationMinutes, session.id)) {
+    const sessionType = session.eventTypeId ? getEventType(session.eventTypeId) : null;
+    if (!isSlotAvailable(startsAt, session.durationMinutes, session.id, sessionType?.bufferMinutes)) {
       return { error: "Sorry, that time isn't available any more. Please pick another." } as const;
     }
     db.update(coachingSessions)
@@ -170,7 +180,7 @@ export async function addAvailabilityRule(_state: FormState, formData: FormData)
     .insert(availabilityRules)
     .values(weekdays.map((weekday) => ({ weekday, startMinute: start, endMinute: end })))
     .run();
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/scheduling/availability");
   revalidatePath("/portal/sessions");
   return { ok: true, message: "Hours added." };
 }
@@ -178,7 +188,7 @@ export async function addAvailabilityRule(_state: FormState, formData: FormData)
 export async function deleteAvailabilityRule(id: number) {
   await requireAdmin();
   getDb().delete(availabilityRules).where(eq(availabilityRules.id, id)).run();
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/scheduling/availability");
   revalidatePath("/portal/sessions");
 }
 
@@ -193,7 +203,7 @@ export async function addAvailabilityBlock(_state: FormState, formData: FormData
   else if (startsAt && endsAt <= startsAt) errors.endsAt = "End must be after the start.";
   if (Object.keys(errors).length || !startsAt || !endsAt) return { errors };
   getDb().insert(availabilityBlocks).values({ startsAt, endsAt, reason: reason || null }).run();
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/scheduling/availability");
   revalidatePath("/portal/sessions");
   return { ok: true, message: "Time off added." };
 }
@@ -201,7 +211,7 @@ export async function addAvailabilityBlock(_state: FormState, formData: FormData
 export async function deleteAvailabilityBlock(id: number) {
   await requireAdmin();
   getDb().delete(availabilityBlocks).where(eq(availabilityBlocks.id, id)).run();
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/scheduling/availability");
   revalidatePath("/portal/sessions");
 }
 
@@ -229,7 +239,7 @@ export async function saveBookingSettings(_state: FormState, formData: FormData)
     .set({ ...(values as Record<keyof typeof values, number>), defaultMeetingUrl: meetingUrl || null })
     .where(eq(bookingSettings.id, 1))
     .run();
-  revalidatePath("/admin/availability");
+  revalidatePath("/admin/scheduling/availability");
   revalidatePath("/portal/sessions");
   return { ok: true, message: "Booking settings saved." };
 }

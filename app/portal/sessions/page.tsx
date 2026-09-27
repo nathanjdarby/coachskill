@@ -4,6 +4,7 @@ import { PackagesCard } from "@/components/portal/PackagesCard";
 import { SessionActions } from "@/components/portal/SessionActions";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
 import { requireClient } from "@/lib/dal";
+import { COACHING_SLUG, durationFor, getEventTypeBySlug } from "@/lib/event-types";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
@@ -19,7 +20,9 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
   const { upcoming, past } = splitSessions(sessions);
   const settings = getBookingSettings();
   const credit = activeCredit(balances);
-  const bookDays = credit ? groupSlotsByDay(availableSlots(credit.sessionMinutes)) : [];
+  const coachingType = getEventTypeBySlug(COACHING_SLUG);
+  const bookMinutes = credit ? durationFor(coachingType, credit.sessionMinutes) : 0;
+  const bookDays = credit ? groupSlotsByDay(availableSlots(bookMinutes, { bufferMinutes: coachingType?.bufferMinutes })) : [];
   const changeable = new Map(
     upcoming.map((s) => [
       s.id,
@@ -53,7 +56,7 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
         <section className="pt-card" id="book">
           <h2>Book a session</h2>
           <p className="pt-muted pt-small pt-card-sub">
-            {credit.sessionMinutes} minutes · uses 1 of your {credit.remaining} remaining {credit.remaining === 1 ? "session" : "sessions"}
+            {bookMinutes} minutes · uses 1 of your {credit.remaining} remaining {credit.remaining === 1 ? "session" : "sessions"}
           </p>
           <BookingPicker days={bookDays} action={bookSession} submitLabel="Book" />
         </section>

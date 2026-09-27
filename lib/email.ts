@@ -1,4 +1,5 @@
 import "server-only";
+import { joinNote } from "@/lib/meeting";
 import { formatPence } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 
@@ -183,7 +184,9 @@ function sessionLine(s: SessionEmail) {
 }
 
 function meetingLine(s: SessionEmail) {
-  return s.meetingUrl ? [`Join here: ${s.meetingUrl}`] : [];
+  if (!s.meetingUrl) return [];
+  const note = joinNote(s.meetingUrl, "client");
+  return [`Join here: ${s.meetingUrl}`, ...(note ? [note] : [])];
 }
 
 const CALENDAR_NOTE = "The attached invite adds it to your calendar.";
@@ -233,7 +236,7 @@ export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | 
     to: input.to,
     subject: input.when === "soon" ? `Starting soon: ${input.title}` : `Reminder: ${input.title} tomorrow`,
     heading: input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
-    paragraphs: [sessionLine(input)],
+    paragraphs: [sessionLine(input), ...(joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : [])],
     button: input.meetingUrl ? { label: "Join the session", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
     footnote: "Need to change it? You can reschedule from your client area.",
   });

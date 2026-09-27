@@ -19,6 +19,7 @@ import { requireAdmin } from "@/lib/dal";
 import { personaLabel } from "@/lib/discovery";
 import { workshopBookingsFor } from "@/lib/attendees";
 import { formatPence } from "@/lib/money";
+import { COACHING_SLUG, listEventTypes } from "@/lib/event-types";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { getClientDetail, markMessagesRead, splitSessions } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
@@ -40,6 +41,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
     .filter((b) => b.remaining > 0)
     .map((b) => ({ id: b.id, label: `${b.name} (${b.remaining} of ${b.sessionCount} left)` }));
   const packageNames = new Map(balances.map((b) => [b.id, b.name]));
+  const eventTypeOptions = listEventTypes({ activeOnly: true }).map((t) => ({ id: t.id, label: t.name, slug: t.slug }));
 
   return (
     <div className="pt-page">
@@ -145,7 +147,13 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             )}
             <details className="pt-inline-details">
               <summary className="pt-link">+ Add a session</summary>
-              <SessionForm clientId={client.id} packageOptions={creditOptions} defaultPackageId={credit?.id ?? null} />
+              <SessionForm
+                clientId={client.id}
+                packageOptions={creditOptions}
+                defaultPackageId={credit?.id ?? null}
+                typeOptions={eventTypeOptions}
+                defaultTypeId={eventTypeOptions.find((o) => o.slug === COACHING_SLUG)?.id ?? null}
+              />
             </details>
           </section>
 

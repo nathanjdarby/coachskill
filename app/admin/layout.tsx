@@ -54,21 +54,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span>Discovery requests</span>
             <Count n={counts.newDiscoveryRequests} label="new requests" />
           </NavLink>
-          <NavLink href="/admin/workshops" also={["/admin/signups"]}>
-            <TabIcon name="signups" />
+          <NavLink href="/admin/calendar">
+            <TabIcon name="sessions" />
+            <span>Calendar</span>
+          </NavLink>
+          <NavLink href="/admin/workshops" also={["/admin/signups"]} className="pt-desktop-flex">
             <span>Workshops</span>
           </NavLink>
           <NavLink href="/admin/packages" className="pt-desktop-flex">
             <span>Packages</span>
           </NavLink>
-          <NavLink href="/admin/availability" className="pt-desktop-flex">
-            <span>Availability</span>
+          <NavLink href="/admin/scheduling" className="pt-desktop-flex">
+            <span>Scheduling</span>
           </NavLink>
           <NavLink href="/admin/resources" className="pt-desktop-flex">
             <span>Resources</span>
           </NavLink>
           {/* Mobile has room for four tabs; the rest live under More. */}
-          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/packages", "/admin/availability", "/admin/resources", "/admin/account"]} className="pt-mobile-flex">
+          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/workshops", "/admin/signups", "/admin/packages", "/admin/scheduling", "/admin/resources", "/admin/account"]} className="pt-mobile-flex">
             <TabIcon name="more" />
             <span>More</span>
             <Count n={counts.newDiscoveryRequests} label="new requests" />

@@ -1299,6 +1299,135 @@ header.pt-topbar {
   }
 }
 
+/* Admin: calendar */
+.cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.su-segmented .cal-range {
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.su-segmented .cal-range.is-current {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35);
+}
+
+.cal-days {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  list-style: none;
+}
+
+.cal-day-title {
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.cal-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.cal-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.cal-time {
+  flex: none;
+  width: 104px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.cal-body:hover .cal-title {
+  color: var(--accent-cyan);
+}
+
+.cal-title {
+  font-weight: 600;
+}
+
+.cal-join {
+  flex: none;
+}
+
+.et-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pt-colour {
+  height: 44px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .cal-item {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .cal-time {
+    width: auto;
+  }
+
+  .cal-body {
+    flex-basis: calc(100% - 22px);
+    order: 3;
+    margin-left: 22px;
+  }
+
+  .pt-shell-app .cal-item .cal-join {
+    order: 2;
+    margin-left: auto;
+    width: auto;
+    padding: 6px 14px;
+  }
+}
+
 /* Package progress */
 .pt-meter-head {
   display: flex;

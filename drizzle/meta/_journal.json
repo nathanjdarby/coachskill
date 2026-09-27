@@ -64,6 +64,13 @@
       "when": 1790534793161,
       "tag": "0008_aspiring_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790534947296,
+      "tag": "0009_open_starjammers",
+      "breakpoints": true
     }
   ]
 }

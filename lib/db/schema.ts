@@ -195,11 +195,41 @@ export const clientPackages = sqliteTable("client_packages", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/** Kinds of appointment Monika offers (like Calendly event types). */
+export const eventTypes = sqliteTable("event_types", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  /** Null means "use the client's package session length" (or 60). */
+  durationMinutes: integer("duration_minutes"),
+  /** Null means use the global gap between sessions. */
+  bufferMinutes: integer("buffer_minutes"),
+  audience: text("audience", { enum: ["clients_with_credits", "invite_only", "admin_only"] }).notNull(),
+  locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person"] }).notNull().default("jitsi"),
+  customUrl: text("custom_url"),
+  colour: text("colour").notNull().default("#22d3ee"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/**
+ * Every appointment: 1:1 sessions, discovery calls and any other event type.
+ * Prospects without a client account are identified by invitee name/email.
+ */
 export const coachingSessions = sqliteTable("coaching_sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  clientId: integer("client_id")
-    .notNull()
-    .references(() => clients.id),
+  clientId: integer("client_id").references(() => clients.id),
+  eventTypeId: integer("event_type_id").references(() => eventTypes.id),
+  discoveryCallId: integer("discovery_call_id").references(() => discoveryCalls.id),
+  inviteeName: text("invitee_name"),
+  inviteeEmail: text("invitee_email"),
+  locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person"] }).notNull().default("custom"),
+  locationText: text("location_text"),
+  /** Hash of the token in a prospect's manage link (/appointments/<token>). */
+  manageTokenHash: text("manage_token_hash").unique(),
+  notes: text("notes"),
   /** The package this session uses a credit from, if any. */
   clientPackageId: integer("client_package_id").references(() => clientPackages.id),
   title: text("title").notNull(),
@@ -299,5 +329,8 @@ export type Message = typeof messages.$inferSelect;
 export type Package = typeof packages.$inferSelect;
 export type ClientPackage = typeof clientPackages.$inferSelect;
 export type BookingSettings = typeof bookingSettings.$inferSelect;
+export type EventType = typeof eventTypes.$inferSelect;
+/** Sessions, discovery calls and other bookings all live in coaching_sessions. */
+export type Appointment = CoachingSession;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceShare = typeof resourceShares.$inferSelect;

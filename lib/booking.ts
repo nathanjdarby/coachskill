@@ -70,7 +70,10 @@ function busyPeriods(from: Date, to: Date, excludeSessionId?: number): Busy[] {
 }
 
 /** Bookable start times for a session of `durationMinutes`, soonest first. */
-export function availableSlots(durationMinutes: number, opts: { now?: Date; excludeSessionId?: number } = {}): Date[] {
+export function availableSlots(
+  durationMinutes: number,
+  opts: { now?: Date; excludeSessionId?: number; bufferMinutes?: number | null } = {},
+): Date[] {
   const now = opts.now ?? new Date();
   const settings = getBookingSettings();
   const rules = listAvailabilityRules();
@@ -79,7 +82,7 @@ export function availableSlots(durationMinutes: number, opts: { now?: Date; excl
   const earliest = now.getTime() + settings.minNoticeHours * 60 * MINUTE;
   const latest = now.getTime() + settings.maxAdvanceDays * DAY;
   const busy = busyPeriods(new Date(earliest), new Date(latest + durationMinutes * MINUTE), opts.excludeSessionId);
-  const buffer = settings.bufferMinutes * MINUTE;
+  const buffer = (opts.bufferMinutes ?? settings.bufferMinutes) * MINUTE;
   const step = Math.max(5, settings.slotStepMinutes);
 
   const today = londonDate(now);
@@ -105,8 +108,8 @@ export function availableSlots(durationMinutes: number, opts: { now?: Date; excl
   return slots.sort((a, b) => a.getTime() - b.getTime());
 }
 
-export function isSlotAvailable(start: Date, durationMinutes: number, excludeSessionId?: number) {
-  return availableSlots(durationMinutes, { excludeSessionId }).some((s) => s.getTime() === start.getTime());
+export function isSlotAvailable(start: Date, durationMinutes: number, excludeSessionId?: number, bufferMinutes?: number | null) {
+  return availableSlots(durationMinutes, { excludeSessionId, bufferMinutes }).some((s) => s.getTime() === start.getTime());
 }
 
 /** The client's oldest paid package with sessions left (sync twin of lib/packages activeCredit). */

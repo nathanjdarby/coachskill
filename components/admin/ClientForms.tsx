@@ -235,7 +235,8 @@ export function EditClientForm({
       </div>
       <div className="pt-field">
         <label htmlFor="status">Status</label>
-        <select id="status" name="status" defaultValue={status}>
+        {/* Keyed on the saved value: React resets forms after an action and a <select> would otherwise snap back. */}
+        <select key={`status-${status}`} id="status" name="status" defaultValue={status}>
           <option value="active">Active</option>
           <option value="paused">Paused</option>
           <option value="completed">Completed</option>
@@ -243,7 +244,7 @@ export function EditClientForm({
       </div>
       <div className="pt-field">
         <label htmlFor="kind">Type</label>
-        <select id="kind" name="kind" defaultValue={kind}>
+        <select key={`kind-${kind}`} id="kind" name="kind" defaultValue={kind}>
           <option value="client">Coaching client</option>
           <option value="attendee">Workshop attendee</option>
         </select>
@@ -293,10 +294,14 @@ export function SessionForm({
   clientId,
   packageOptions = [],
   defaultPackageId = null,
+  typeOptions = [],
+  defaultTypeId = null,
 }: {
   clientId: number;
   packageOptions?: PackageOption[];
   defaultPackageId?: number | null;
+  typeOptions?: PackageOption[];
+  defaultTypeId?: number | null;
 }) {
   const [state, action] = useActionState(addSession.bind(null, clientId), undefined);
   const f = state?.fields;
@@ -332,6 +337,7 @@ export function SessionForm({
         <div className="pt-field">
           <label htmlFor="clientPackageId">Count against package</label>
           <select
+            key={`pkg-${state?.ok || !f ? defaultPackageId : f.clientPackageId}`}
             id="clientPackageId"
             name="clientPackageId"
             defaultValue={state?.ok || !f ? String(defaultPackageId ?? "") : f.clientPackageId}
@@ -346,9 +352,27 @@ export function SessionForm({
           <FieldError state={state} name="clientPackageId" />
         </div>
       )}
+      {typeOptions.length > 0 && (
+        <div className="pt-field">
+          <label htmlFor="eventTypeId">Type</label>
+          <select
+            key={`type-${state?.ok || !f ? defaultTypeId : f.eventTypeId}`}
+            id="eventTypeId"
+            name="eventTypeId"
+            defaultValue={state?.ok || !f ? String(defaultTypeId ?? "") : f.eventTypeId}
+          >
+            {typeOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <FieldError state={state} name="eventTypeId" />
+        </div>
+      )}
       <div className="pt-field">
-        <label htmlFor="meetingUrl">Meeting link (optional)</label>
-        <input id="meetingUrl" name="meetingUrl" type="url" defaultValue={state?.ok ? "" : f?.meetingUrl} placeholder="https://zoom.us/j/…" maxLength={500} />
+        <label htmlFor="meetingUrl">Custom meeting link (optional)</label>
+        <input id="meetingUrl" name="meetingUrl" type="url" defaultValue={state?.ok ? "" : f?.meetingUrl} placeholder="Leave blank for an automatic video room" maxLength={500} />
         <FieldError state={state} name="meetingUrl" />
       </div>
       <FormMessage state={state} />

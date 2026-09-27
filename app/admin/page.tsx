@@ -25,7 +25,7 @@ export default async function AdminOverviewPage() {
   const stats = [
     { label: "Active clients", value: counts.activeClients, href: "/admin/clients" },
     { label: "Unread messages", value: counts.unreadMessages, href: "/admin/clients" },
-    { label: "Sessions in the next 7 days", value: counts.sessionsThisWeek, href: "/admin/clients" },
+    { label: "Appointments in the next 7 days", value: counts.sessionsThisWeek, href: "/admin/calendar" },
     { label: "New discovery requests", value: counts.newDiscoveryRequests, href: "/admin/discovery" },
   ];
 
@@ -65,7 +65,12 @@ export default async function AdminOverviewPage() {
         </section>
 
         <section className="pt-card">
-          <h2>Upcoming sessions</h2>
+          <div className="pt-card-head">
+            <h2>Upcoming sessions</h2>
+            <Link href="/admin/calendar" className="pt-link pt-small">
+              Calendar →
+            </Link>
+          </div>
           {upcoming.length === 0 ? (
             <p className="pt-muted">No sessions booked.</p>
           ) : (
