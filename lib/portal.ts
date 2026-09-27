@@ -46,7 +46,7 @@ export async function listClientsOverview() {
     db
       .select()
       .from(coachingSessions)
-      .where(gte(coachingSessions.startsAt, new Date()))
+      .where(and(gte(coachingSessions.startsAt, new Date()), isNull(coachingSessions.cancelledAt)))
       .orderBy(asc(coachingSessions.startsAt)),
   ]);
 
@@ -75,6 +75,7 @@ export async function adminDashboardCounts() {
         and(
           gte(coachingSessions.startsAt, new Date()),
           sql`${coachingSessions.startsAt} <= ${weekAhead.getTime()}`,
+          isNull(coachingSessions.cancelledAt),
         ),
       ),
     db
@@ -115,7 +116,7 @@ export async function getClientDetail(clientId: number) {
       .innerJoin(users, eq(clientNotes.authorId, users.id))
       .where(eq(clientNotes.clientId, clientId))
       .orderBy(desc(clientNotes.createdAt)),
-    listSessions(clientId),
+    listSessions(clientId, { includeCancelled: true }),
     listMessages(clientId),
   ]);
 
@@ -140,11 +141,16 @@ export async function adminEmails() {
 
 // — Shared —
 
-export async function listSessions(clientId: number) {
+/** A client's sessions, newest first. Cancelled ones are left out unless asked for. */
+export async function listSessions(clientId: number, { includeCancelled = false } = {}) {
   return getDb()
     .select()
     .from(coachingSessions)
-    .where(eq(coachingSessions.clientId, clientId))
+    .where(
+      includeCancelled
+        ? eq(coachingSessions.clientId, clientId)
+        : and(eq(coachingSessions.clientId, clientId), isNull(coachingSessions.cancelledAt)),
+    )
     .orderBy(desc(coachingSessions.startsAt));
 }
 

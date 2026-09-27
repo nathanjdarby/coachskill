@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteNote, deleteSession, sendAdminMessage } from "@/app/actions/admin";
+import { cancelSessionAsAdmin } from "@/app/actions/booking";
 import {
   ConfirmSubmit,
   EditClientForm,
@@ -223,6 +224,9 @@ function SessionList({
     durationMinutes: number;
     meetingUrl: string | null;
     clientPackageId: number | null;
+    cancelledAt: Date | null;
+    cancelledBy: "admin" | "client" | null;
+    bookedBy: "admin" | "client";
   }[];
   clientId: number;
   packageNames: Map<number, string>;
@@ -230,10 +234,12 @@ function SessionList({
   return (
     <ul className="pt-sessions">
       {sessions.map((s) => (
-        <li key={s.id} className="pt-session">
+        <li key={s.id} className={`pt-session ${s.cancelledAt ? "is-cancelled" : ""}`}>
           <div>
             <p className="pt-session-title">{s.title}</p>
             <p className="pt-muted pt-small">
+              {s.cancelledAt && `Cancelled by ${s.cancelledBy === "client" ? "client" : "you"} · `}
+              {!s.cancelledAt && s.bookedBy === "client" && "Booked by client · "}
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
               {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
               {s.meetingUrl && (
@@ -246,9 +252,19 @@ function SessionList({
               )}
             </p>
           </div>
-          <form action={deleteSession.bind(null, s.id, clientId)}>
-            <ConfirmSubmit label="Remove" confirmText={`Remove "${s.title}"?`} />
-          </form>
+          <div className="pt-session-admin">
+            {!s.cancelledAt && (
+              <form action={cancelSessionAsAdmin.bind(null, s.id, clientId)}>
+                <ConfirmSubmit
+                  label="Cancel"
+                  confirmText={`Cancel "${s.title}"? The client is emailed and any package session is returned.`}
+                />
+              </form>
+            )}
+            <form action={deleteSession.bind(null, s.id, clientId)}>
+              <ConfirmSubmit label="Remove" confirmText={`Remove "${s.title}" completely? Nothing is emailed.`} />
+            </form>
+          </div>
         </li>
       ))}
     </ul>

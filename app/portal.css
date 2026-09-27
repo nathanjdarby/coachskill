@@ -1169,6 +1169,218 @@ header.pt-topbar {
   display: none !important;
 }
 
+/* Booking picker */
+.pt-card-sub {
+  margin: -6px 0 14px;
+}
+
+.pt-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pt-picker-days {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.pt-picker-days::-webkit-scrollbar {
+  display: none;
+}
+
+.pt-picker-day {
+  flex: 0 0 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.pt-picker-day.is-selected {
+  border-color: rgba(34, 211, 238, 0.6);
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--text-primary);
+}
+
+.pt-picker-dow,
+.pt-picker-month {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pt-picker-date {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pt-picker-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.pt-picker-time {
+  padding: 11px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pt-picker-time:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.pt-picker-time.is-selected {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.pt-picker .pt-btn {
+  align-self: stretch;
+  padding: 13px 18px;
+}
+
+.pt-session {
+  flex-wrap: wrap;
+}
+
+.pt-session-actions {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pt-session-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pt-reschedule {
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-deep);
+}
+
+.pt-session-admin {
+  display: flex;
+  gap: 14px;
+}
+
+.pt-session.is-cancelled .pt-session-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Admin: availability */
+.pt-hours {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin-bottom: 4px;
+}
+
+.pt-hours li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pt-hours li:first-child {
+  border-top: none;
+}
+
+.pt-hours-day {
+  min-width: 96px;
+  font-weight: 600;
+}
+
+.pt-hours-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pt-hours-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  font-size: 0.875rem;
+}
+
+.pt-legend {
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+fieldset.pt-field {
+  border: none;
+  padding: 0;
+}
+
+.pt-day-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pt-day-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pt-day-check span {
+  display: inline-block;
+  min-width: 48px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  text-align: center;
+  cursor: pointer;
+}
+
+.pt-day-check input:checked + span {
+  border-color: rgba(34, 211, 238, 0.6);
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--text-primary);
+}
+
+.pt-day-check input:focus-visible + span {
+  outline: 2px solid var(--accent-cyan);
+}
+
 /* ==========================================================================
    Client portal + admin: app layout on mobile
    ========================================================================== */

@@ -1,6 +1,10 @@
+import { bookSession } from "@/app/actions/booking";
+import { BookingPicker } from "@/components/portal/BookingPicker";
 import { PackagesCard } from "@/components/portal/PackagesCard";
+import { SessionActions } from "@/components/portal/SessionActions";
+import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
 import { requireClient } from "@/lib/dal";
-import { listPackages, packageBalances } from "@/lib/packages";
+import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
@@ -13,6 +17,17 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
     listPackages({ activeOnly: true }),
   ]);
   const { upcoming, past } = splitSessions(sessions);
+  const settings = getBookingSettings();
+  const credit = activeCredit(balances);
+  const bookDays = credit ? groupSlotsByDay(availableSlots(credit.sessionMinutes)) : [];
+  const changeable = new Map(
+    upcoming.map((s) => [
+      s.id,
+      canClientChange(s.startsAt, settings)
+        ? groupSlotsByDay(availableSlots(s.durationMinutes, { excludeSessionId: s.id }))
+        : null,
+    ]),
+  );
 
   return (
     <div className="pt-page pt-narrow">
@@ -34,6 +49,16 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
 
       <PackagesCard balances={balances} offers={offers} />
 
+      {credit && (
+        <section className="pt-card" id="book">
+          <h2>Book a session</h2>
+          <p className="pt-muted pt-small pt-card-sub">
+            {credit.sessionMinutes} minutes · uses 1 of your {credit.remaining} remaining {credit.remaining === 1 ? "session" : "sessions"}
+          </p>
+          <BookingPicker days={bookDays} action={bookSession} submitLabel="Book" />
+        </section>
+      )}
+
       <section className="pt-card">
         <h2>Upcoming</h2>
         {upcoming.length === 0 ? (
@@ -53,6 +78,12 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
                     Join
                   </a>
                 )}
+                <SessionActions
+                  sessionId={s.id}
+                  canChange={changeable.get(s.id) != null}
+                  cutoffHours={settings.cancelCutoffHours}
+                  rescheduleDays={changeable.get(s.id) ?? []}
+                />
               </li>
             ))}
           </ul>

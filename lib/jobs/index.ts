@@ -1,4 +1,5 @@
 import "server-only";
+import { sendSessionReminders1h, sendSessionReminders24h } from "./session-reminders";
 import { sendBalanceReminders, sendBalanceRequests } from "./workshop-balance";
 
 type Job = (now: Date) => Promise<number>;
@@ -6,6 +7,8 @@ type Job = (now: Date) => Promise<number>;
 const JOBS: Record<string, Job> = {
   balanceRequests: sendBalanceRequests,
   balanceReminders: sendBalanceReminders,
+  sessionReminders24h: sendSessionReminders24h,
+  sessionReminders1h: sendSessionReminders1h,
 };
 
 /** Runs every scheduled job; one failing job doesn't stop the others. */

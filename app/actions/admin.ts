@@ -20,11 +20,11 @@ import {
 import {
   emailNewMessageToClient,
   emailPortalInvite,
-  emailSessionBooked,
   emailSharedUpdate,
 } from "@/lib/email";
 import { packageBalances } from "@/lib/packages";
 import { hasEarlierUnread, portalAccess } from "@/lib/portal";
+import { notifySessionChange } from "@/lib/session-notify";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
 
@@ -236,7 +236,7 @@ export async function addSession(clientId: number, _state: FormState, formData: 
   if (Object.keys(errors).length || !startsAt) return { errors, fields: { ...fields, clientPackageId: packageField } };
   if (!(await getClient(clientId))) return { ok: false, message: "Client not found." };
 
-  await getDb()
+  const [created] = await getDb()
     .insert(coachingSessions)
     .values({
       clientId,
@@ -245,22 +245,15 @@ export async function addSession(clientId: number, _state: FormState, formData: 
       startsAt,
       durationMinutes: duration,
       meetingUrl: fields.meetingUrl || null,
+      bookedBy: "admin",
       createdAt: new Date(),
-    });
+      updatedAt: new Date(),
+    })
+    .returning();
 
   const account = await clientAccountForEmail(clientId);
   if (account && startsAt.getTime() > Date.now()) {
-    const url = await appUrl("/portal/sessions");
-    after(() =>
-      emailSessionBooked({
-        to: account.email,
-        name: account.name,
-        title: fields.title,
-        startsAt,
-        durationMinutes: duration,
-        url,
-      }),
-    );
+    after(() => notifySessionChange(created.id, "booked", "admin"));
   }
   revalidateClient(clientId);
   return { ok: true, message: account ? "Session added and the client has been emailed." : "Session added." };

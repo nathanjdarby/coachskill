@@ -33,7 +33,7 @@ export async function packageBalances(clientId: number): Promise<PackageBalance[
     .select({
       pkg: clientPackages,
       // Spelled out: drizzle renders columns unqualified inside a subquery, which would match the wrong "id".
-      used: sql<number>`(select count(*) from coaching_sessions cs where cs.client_package_id = "client_packages"."id")`,
+      used: sql<number>`(select count(*) from coaching_sessions cs where cs.client_package_id = "client_packages"."id" and cs.cancelled_at is null)`,
     })
     .from(clientPackages)
     .where(and(eq(clientPackages.clientId, clientId), eq(clientPackages.status, "paid")))

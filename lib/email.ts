@@ -14,7 +14,17 @@ export function emailConfigured() {
   return Boolean(process.env.RESEND_API_KEY?.trim());
 }
 
-async function sendEmail(input: { to: string | string[]; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; footnote?: string }): Promise<SendResult> {
+export type EmailAttachment = { filename: string; content: string; contentType?: string };
+
+async function sendEmail(input: {
+  to: string | string[];
+  subject: string;
+  heading: string;
+  paragraphs: string[];
+  button?: { label: string; url: string };
+  footnote?: string;
+  attachments?: EmailAttachment[];
+}): Promise<SendResult> {
   const html = renderHtml(input);
   const text = [
     input.heading,
@@ -42,6 +52,15 @@ async function sendEmail(input: { to: string | string[]; subject: string; headin
         html,
         text,
         ...(process.env.EMAIL_REPLY_TO?.trim() ? { reply_to: process.env.EMAIL_REPLY_TO.trim() } : {}),
+        ...(input.attachments?.length
+          ? {
+              attachments: input.attachments.map((a) => ({
+                filename: a.filename,
+                content: a.content,
+                ...(a.contentType ? { content_type: a.contentType } : {}),
+              })),
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(8000),
     });
@@ -148,13 +167,86 @@ export function emailSharedUpdate(input: { to: string; name: string; url: string
   });
 }
 
-export function emailSessionBooked(input: { to: string; name: string; title: string; startsAt: Date; durationMinutes: number; url: string }) {
+type SessionEmail = {
+  to: string;
+  name: string;
+  title: string;
+  startsAt: Date;
+  durationMinutes: number;
+  url: string;
+  meetingUrl?: string | null;
+  attachments?: EmailAttachment[];
+};
+
+function sessionLine(s: SessionEmail) {
+  return `${s.title} — ${formatDateTime(s.startsAt)} (UK time), ${s.durationMinutes} minutes.`;
+}
+
+function meetingLine(s: SessionEmail) {
+  return s.meetingUrl ? [`Join here: ${s.meetingUrl}`] : [];
+}
+
+const CALENDAR_NOTE = "The attached invite adds it to your calendar.";
+
+export function emailSessionBooked(input: SessionEmail) {
   return sendEmail({
     to: input.to,
     subject: `Session booked: ${formatDateTime(input.startsAt)}`,
     heading: `Hi ${firstName(input.name)}, our next session is booked`,
-    paragraphs: [`${input.title} — ${formatDateTime(input.startsAt)} (UK time), ${input.durationMinutes} minutes.`],
+    paragraphs: [sessionLine(input), ...meetingLine(input)],
     button: { label: "View in your client area", url: input.url },
+    footnote: input.attachments?.length ? CALENDAR_NOTE : undefined,
+    attachments: input.attachments,
+  });
+}
+
+export function emailSessionRescheduled(input: SessionEmail) {
+  return sendEmail({
+    to: input.to,
+    subject: `Session moved to ${formatDateTime(input.startsAt)}`,
+    heading: `Hi ${firstName(input.name)}, our session has moved`,
+    paragraphs: [`The new time is: ${sessionLine(input)}`, ...meetingLine(input)],
+    button: { label: "View in your client area", url: input.url },
+    footnote: input.attachments?.length ? "The attached invite updates the event in your calendar." : undefined,
+    attachments: input.attachments,
+  });
+}
+
+export function emailSessionCancelled(input: SessionEmail & { byClient: boolean }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Session cancelled: ${formatDateTime(input.startsAt)}`,
+    heading: `Hi ${firstName(input.name)}, our session is cancelled`,
+    paragraphs: [
+      `This session has been cancelled: ${sessionLine(input)}`,
+      input.byClient
+        ? "The session has gone back into your package, so you can book another time whenever suits you."
+        : "If it came from your package, the session has been returned so you can book another time.",
+    ],
+    button: { label: "Book another time", url: input.url },
+    attachments: input.attachments,
+  });
+}
+
+export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | "soon" }) {
+  return sendEmail({
+    to: input.to,
+    subject: input.when === "soon" ? `Starting soon: ${input.title}` : `Reminder: ${input.title} tomorrow`,
+    heading: input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
+    paragraphs: [sessionLine(input)],
+    button: input.meetingUrl ? { label: "Join the session", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
+    footnote: "Need to change it? You can reschedule from your client area.",
+  });
+}
+
+export function emailAdminBooking(input: { to: string[]; subject: string; lines: string[]; url: string; attachments?: EmailAttachment[] }) {
+  return sendEmail({
+    to: input.to,
+    subject: input.subject,
+    heading: input.subject,
+    paragraphs: input.lines,
+    button: { label: "Open client", url: input.url },
+    attachments: input.attachments,
   });
 }
 

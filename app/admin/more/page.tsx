@@ -6,6 +6,7 @@ import { adminDashboardCounts } from "@/lib/portal";
 const LINKS = [
   { href: "/admin/discovery", label: "Discovery requests", hint: "Answers from the discovery call form" },
   { href: "/admin/packages", label: "Packages", hint: "Coaching packages clients can buy" },
+  { href: "/admin/availability", label: "Availability", hint: "When clients can book sessions" },
   { href: "/admin/signups", label: "Workshop signups", hint: "Everyone who's booked a workshop" },
   { href: "/admin/account", label: "Your account", hint: "Change your password" },
 ];

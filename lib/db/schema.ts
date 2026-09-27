@@ -200,7 +200,44 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   meetingUrl: text("meeting_url"),
+  bookedBy: text("booked_by", { enum: ["admin", "client"] }).notNull().default("admin"),
+  /** Cancelled sessions stay for the record but free the slot and the package credit. */
+  cancelledAt: integer("cancelled_at", { mode: "timestamp_ms" }),
+  cancelledBy: text("cancelled_by", { enum: ["admin", "client"] }),
+  reminder24hSentAt: integer("reminder_24h_sent_at", { mode: "timestamp_ms" }),
+  reminder1hSentAt: integer("reminder_1h_sent_at", { mode: "timestamp_ms" }),
+  /** Bumped on every change so calendar apps update the existing event. */
+  icsSequence: integer("ics_sequence").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+});
+
+/** Weekly bookable hours (London time), e.g. Monday 09:00–17:00. */
+export const availabilityRules = sqliteTable("availability_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** 0 = Sunday … 6 = Saturday. */
+  weekday: integer("weekday").notNull(),
+  startMinute: integer("start_minute").notNull(),
+  endMinute: integer("end_minute").notNull(),
+});
+
+/** Time off or one-off busy periods that can't be booked. */
+export const availabilityBlocks = sqliteTable("availability_blocks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
+  endsAt: integer("ends_at", { mode: "timestamp_ms" }).notNull(),
+  reason: text("reason"),
+});
+
+/** Single row (id = 1) of booking rules. */
+export const bookingSettings = sqliteTable("booking_settings", {
+  id: integer("id").primaryKey(),
+  bufferMinutes: integer("buffer_minutes").notNull().default(15),
+  minNoticeHours: integer("min_notice_hours").notNull().default(24),
+  maxAdvanceDays: integer("max_advance_days").notNull().default(42),
+  slotStepMinutes: integer("slot_step_minutes").notNull().default(30),
+  cancelCutoffHours: integer("cancel_cutoff_hours").notNull().default(24),
+  defaultMeetingUrl: text("default_meeting_url"),
 });
 
 export const messages = sqliteTable("messages", {
@@ -225,3 +262,4 @@ export type Message = typeof messages.$inferSelect;
 
 export type Package = typeof packages.$inferSelect;
 export type ClientPackage = typeof clientPackages.$inferSelect;
+export type BookingSettings = typeof bookingSettings.$inferSelect;
