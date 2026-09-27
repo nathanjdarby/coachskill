@@ -83,6 +83,8 @@ export async function handlePackagePaid(session: Stripe.Checkout.Session) {
     .limit(1);
   if (!row) return;
   const { purchase, client } = row;
+  // Buying coaching makes a workshop attendee a coaching client.
+  if (client.kind !== "client") db.update(clients).set({ kind: "client", updatedAt: new Date() }).where(eq(clients.id, client.id)).run();
   await emailPackagePurchased({
     to: client.email,
     name: client.fullName,

@@ -259,7 +259,9 @@ function workshopLine(w: WorkshopInfo) {
   return `${w.workshopName}: ${when}${w.location ? `, ${w.location}` : ""}.`;
 }
 
-export function emailDepositConfirmed(input: WorkshopInfo & { to: string; name: string; balancePence: number }) {
+export function emailDepositConfirmed(
+  input: WorkshopInfo & { to: string; name: string; balancePence: number; account?: { url: string; isNew: boolean } },
+) {
   return sendEmail({
     to: input.to,
     subject: `Your place is secured: ${input.workshopName}`,
@@ -268,8 +270,35 @@ export function emailDepositConfirmed(input: WorkshopInfo & { to: string; name: 
       "I've received your deposit and your place on the workshop is reserved.",
       workshopLine(input),
       `The remaining ${formatPence(input.balancePence)} is due a week before the workshop. I'll email you a secure payment link then — there's nothing to do until it arrives.`,
+      ...(input.account
+        ? [
+            input.account.isNew
+              ? "I've also set up your own Coach Skill client area, where you'll find your workshop details, any materials I share and a place to message me. Create your password to get started:"
+              : "You'll find your workshop details in your Coach Skill client area:",
+          ]
+        : []),
     ],
-    footnote: "Your payment receipt comes separately from Stripe.",
+    button: input.account
+      ? { label: input.account.isNew ? "Set up your account" : "Open your client area", url: input.account.url }
+      : undefined,
+    footnote: input.account?.isNew
+      ? "The set-up link works once and expires in 7 days. Your payment receipt comes separately from Stripe."
+      : "Your payment receipt comes separately from Stripe.",
+  });
+}
+
+export function emailAttendeeInvite(input: WorkshopInfo & { to: string; name: string; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: "Your Coach Skill client area is ready",
+    heading: `Hi ${firstName(input.name)}, your client area is ready`,
+    paragraphs: [
+      "I've set up your own Coach Skill client area for the workshop — you'll find your booking, any materials I share and a place to message me.",
+      workshopLine(input),
+      "Create your password to get started:",
+    ],
+    button: { label: "Set up your account", url: input.url },
+    footnote: "This link works once and expires in 7 days. If it has expired, just reply and I'll send you a new one.",
   });
 }
 

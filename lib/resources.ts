@@ -6,7 +6,7 @@ import { SEAT_STATUSES } from "@/lib/signup-status";
 
 /**
  * SQL condition: the given client can see the resource in `resources.id`.
- * Workshop shares match clients whose email has a paid, seat-holding signup for that run.
+ * Workshop shares match clients with a paid, seat-holding signup for that run (linked, or by email).
  * (Column names are spelled out: drizzle renders them unqualified inside subqueries.)
  */
 function visibleTo(clientId: number) {
@@ -17,8 +17,9 @@ function visibleTo(clientId: number) {
         rs.scope = 'all_clients'
         or (rs.scope = 'client' and rs.client_id = ${clientId})
         or (rs.scope = 'workshop' and exists (
-          select 1 from signups s join clients c on lower(c.email) = lower(s.email)
-          where s.workshop_id = rs.workshop_id and c.id = ${clientId}
+          select 1 from signups s join clients c on c.id = ${clientId}
+          where s.workshop_id = rs.workshop_id
+            and (s.client_id = c.id or lower(s.email) = lower(c.email))
             and s.deposit_paid_at is not null and s.status in ('pending', 'accepted')
         ))
       )
@@ -51,7 +52,7 @@ async function workshopClientIds(workshopId: number) {
   const rows = await getDb()
     .selectDistinct({ id: clients.id })
     .from(signups)
-    .innerJoin(clients, sql`lower(${clients.email}) = lower(${signups.email})`)
+    .innerJoin(clients, sql`(${clients.id} = ${signups.clientId} or lower(${clients.email}) = lower(${signups.email}))`)
     .where(
       and(eq(signups.workshopId, workshopId), isNotNull(signups.depositPaidAt), inArray(signups.status, [...SEAT_STATUSES])),
     );

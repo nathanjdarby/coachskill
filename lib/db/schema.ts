@@ -56,6 +56,8 @@ export const signups = sqliteTable(
     balanceReminderSentAt: integer("balance_reminder_sent_at", { mode: "timestamp_ms" }),
     balanceCheckoutSessionId: text("balance_checkout_session_id"),
     balancePaidAt: integer("balance_paid_at", { mode: "timestamp_ms" }),
+    /** The client-area account this booking belongs to (set when the attendee is onboarded). */
+    clientId: integer("client_id"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
@@ -103,6 +105,8 @@ export const clients = sqliteTable("clients", {
   status: text("status", { enum: ["active", "paused", "completed"] })
     .notNull()
     .default("active"),
+  /** Coaching clients vs people who came in through a workshop booking. */
+  kind: text("kind", { enum: ["client", "attendee"] }).notNull().default("client"),
   discoveryCallId: integer("discovery_call_id")
     .unique()
     .references(() => discoveryCalls.id),

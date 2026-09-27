@@ -1,6 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./index";
-import { workshops, signups, type Signup } from "./schema";
+import { workshops, signups, users, type Signup } from "./schema";
 
 export async function getWorkshopBySlug(slug: string) {
   const db = getDb();
@@ -27,7 +27,12 @@ export async function listWorkshops() {
   return db.select().from(workshops).orderBy(workshops.name);
 }
 
-export type SignupListRow = Signup & { workshopSlug: string; workshopName: string };
+export type SignupListRow = Signup & {
+  workshopSlug: string;
+  workshopName: string;
+  /** Client-area account for this booking: none yet, invited (no password), or active. */
+  account: "none" | "invited" | "active";
+};
 
 export async function listSignupsWithWorkshop(filters: {
   workshopId?: number;
@@ -49,13 +54,25 @@ export async function listSignupsWithWorkshop(filters: {
         : and(...conditions);
 
   const rows = await db
-    .select({ signup: signups, workshopSlug: workshops.slug, workshopName: workshops.name })
+    .select({
+      signup: signups,
+      workshopSlug: workshops.slug,
+      workshopName: workshops.name,
+      userId: users.id,
+      hasPassword: users.passwordHash,
+    })
     .from(signups)
     .innerJoin(workshops, eq(signups.workshopId, workshops.id))
+    .leftJoin(users, eq(users.clientId, signups.clientId))
     .where(whereClause)
     .orderBy(desc(signups.createdAt));
 
-  return rows.map((r) => ({ ...r.signup, workshopSlug: r.workshopSlug, workshopName: r.workshopName }));
+  return rows.map((r) => ({
+    ...r.signup,
+    workshopSlug: r.workshopSlug,
+    workshopName: r.workshopName,
+    account: r.userId == null ? "none" : r.hasPassword ? "active" : "invited",
+  }));
 }
 
 export async function getSignupById(id: number) {

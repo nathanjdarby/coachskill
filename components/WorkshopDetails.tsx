@@ -1,7 +1,5 @@
-import { formatPence } from "@/lib/money";
-import { formatDateTime } from "@/lib/time";
 import type { WorkshopOffer } from "@/lib/workshop-offer";
-import { SecurePlaceButton } from "./SecurePlaceButton";
+import { WorkshopBooking } from "./WorkshopBooking";
 
 const WORKSHOP_ITEMS = [
   {
@@ -31,45 +29,25 @@ function hoursLabel(minutes: number) {
   return `${Number.isInteger(h) ? h : h.toFixed(1)} hours`;
 }
 
-export function WorkshopDetails({ offer }: { offer: WorkshopOffer }) {
-  const startsAt = offer.startsAt ? new Date(offer.startsAt) : null;
-  const items = [
-    ...(startsAt
-      ? [{ title: formatDateTime(startsAt), description: offer.location ?? "Location confirmed in your booking email." }]
-      : []),
-    { ...WORKSHOP_ITEMS[0], title: hoursLabel(offer.durationMinutes) },
-    ...WORKSHOP_ITEMS.slice(1),
-  ];
+export function WorkshopDetails({ offers, featured }: { offers: WorkshopOffer[]; featured: WorkshopOffer }) {
+  const items = [{ ...WORKSHOP_ITEMS[0], title: hoursLabel(featured.durationMinutes) }, ...WORKSHOP_ITEMS.slice(1)];
   return (
     <section className="section">
       <div className="container">
         <h2 className="section-title">
           Workshop <span>details</span>
         </h2>
-        <div className="workshop-details">
-          <div className="workshop-info">
-            {items.map((item) => (
-              <div key={item.title} className="workshop-item">
-                <div className="check" />
-                <div>
-                  <h4>{item.title}</h4>
-                  <p>{item.description}</p>
-                </div>
+        <WorkshopBooking offers={offers} />
+        <div className="workshop-info workshop-info-grid">
+          {items.map((item) => (
+            <div key={item.title} className="workshop-item">
+              <div className="check" />
+              <div>
+                <h4>{item.title}</h4>
+                <p>{item.description}</p>
               </div>
-            ))}
-          </div>
-          <div className="payment-card">
-            <h3>Payment</h3>
-            <div className="price-row">
-              <span className="label">Deposit now to secure your place</span>
-              <span className="amount highlight">{formatPence(offer.depositPence)}</span>
             </div>
-            <div className="price-row">
-              <span className="label">Balance (1 week prior to workshop)</span>
-              <span className="amount">{formatPence(offer.balancePence)}</span>
-            </div>
-            <SecurePlaceButton offer={offer} />
-          </div>
+          ))}
         </div>
       </div>
     </section>

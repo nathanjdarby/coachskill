@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { markBalancePaid, sendBalanceLink } from "@/app/actions/workshops";
+import { markBalancePaid, onboardSignup, sendBalanceLink } from "@/app/actions/workshops";
 import type { FormState } from "@/app/actions/types";
 import { FormMessage } from "@/components/portal/FormBits";
 import type { SignupListRow } from "@/lib/db/queries";
@@ -101,6 +101,7 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
             <th>Source</th>
             <th>Status</th>
             <th>Payment</th>
+            <th>Account</th>
             <th>Notes</th>
             <th>Actions</th>
           </tr>
@@ -118,6 +119,21 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
               </td>
               <td data-label="Payment">
                 <PaymentStatus signup={s} />
+              </td>
+              <td data-label="Account">
+                {s.account === "active" ? (
+                  s.clientId ? (
+                    <a href={`/admin/clients/${s.clientId}`} className="admin-badge accepted">
+                      Client area active
+                    </a>
+                  ) : (
+                    <span className="admin-badge accepted">Client area active</span>
+                  )
+                ) : s.account === "invited" ? (
+                  <span className="admin-badge pending">Invited</span>
+                ) : (
+                  <span className="admin-muted">No account</span>
+                )}
               </td>
               <td className="admin-cell-notes">
                 <NotesCell
@@ -167,6 +183,13 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
                       }
                     >
                       Mark balance paid
+                    </button>
+                  </div>
+                )}
+                {s.depositPaidAt && s.account !== "active" && s.status !== "declined" && (
+                  <div className="admin-actions admin-pay-actions">
+                    <button type="button" disabled={busyId === s.id} onClick={() => runPaymentAction(s.id, onboardSignup)}>
+                      {s.account === "invited" ? "Resend account invite" : "Create account & invite"}
                     </button>
                   </div>
                 )}

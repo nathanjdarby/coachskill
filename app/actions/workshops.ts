@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { onboardAttendee } from "@/lib/attendees";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { signups, workshops } from "@/lib/db/schema";
+import { emailAttendeeInvite } from "@/lib/email";
 import { sendBalanceLinkNow } from "@/lib/jobs/workshop-balance";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
@@ -128,4 +130,32 @@ export async function markBalancePaid(signupId: number): Promise<FormState> {
     .run();
   revalidateWorkshops();
   return result.changes === 1 ? { ok: true, message: "Balance marked as paid." } : { ok: false, message: "Already paid or declined." };
+}
+
+/** Gives an existing booking a client-area account and emails them the set-up link. */
+export async function onboardSignup(signupId: number): Promise<FormState> {
+  await requireAdmin();
+  const result = await onboardAttendee(signupId);
+  revalidateWorkshops();
+  revalidatePath("/admin/clients");
+  if (!result.ok) return { ok: false, message: result.reason };
+  if (!result.setupUrl) return { ok: true, message: `${result.client.fullName} already has an account — their booking now shows in their client area.` };
+
+  const [row] = await getDb()
+    .select({ signup: signups, workshop: workshops })
+    .from(signups)
+    .innerJoin(workshops, eq(signups.workshopId, workshops.id))
+    .where(eq(signups.id, signupId))
+    .limit(1);
+  const sent = await emailAttendeeInvite({
+    to: result.client.email,
+    name: result.client.fullName,
+    url: result.setupUrl,
+    workshopName: row?.workshop.name ?? "Value Selling Workshop",
+    startsAt: row?.workshop.startsAt ?? null,
+    location: row?.workshop.location ?? null,
+  });
+  return sent.ok
+    ? { ok: true, message: `Invite emailed to ${result.client.email}.` }
+    : { ok: false, message: "Email couldn't be sent. Send them this link yourself — it won't be shown again:", link: result.setupUrl };
 }

@@ -11,11 +11,12 @@ import {
   SessionForm,
 } from "@/components/admin/ClientForms";
 import { PackageMeter } from "@/components/portal/PackageMeter";
-import { AccessBadge, StatusBadge } from "@/components/portal/AccessBadge";
+import { AccessBadge, KindBadge, StatusBadge } from "@/components/portal/AccessBadge";
 import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
 import { requireAdmin } from "@/lib/dal";
 import { personaLabel } from "@/lib/discovery";
+import { workshopBookingsFor } from "@/lib/attendees";
 import { formatPence } from "@/lib/money";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { getClientDetail, markMessagesRead, splitSessions } from "@/lib/portal";
@@ -32,7 +33,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
 
   const { client, user, access, discovery, notes, sessions, messages } = detail;
   const { upcoming, past } = splitSessions(sessions);
-  const [balances, catalogue] = await Promise.all([packageBalances(id), listPackages()]);
+  const [balances, catalogue, bookings] = await Promise.all([packageBalances(id), listPackages(), workshopBookingsFor(client)]);
   const credit = activeCredit(balances);
   const creditOptions = balances
     .filter((b) => b.remaining > 0)
@@ -57,6 +58,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
           </p>
           <div className="pt-badges">
             <StatusBadge status={client.status} />
+            <KindBadge kind={client.kind} />
             <AccessBadge access={access} />
             <span className="pt-muted pt-small">Client since {formatDate(client.createdAt)}</span>
           </div>
@@ -146,6 +148,31 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             </details>
           </section>
 
+          {bookings.length > 0 && (
+            <section className="pt-card" id="workshops">
+              <h2>Workshop bookings</h2>
+              <ul className="pt-sessions">
+                {bookings.map(({ signup, workshop }) => (
+                  <li key={signup.id} className="pt-session">
+                    <div>
+                      <p className="pt-session-title">{workshop.name}</p>
+                      <p className="pt-muted pt-small">
+                        {workshop.startsAt ? formatDateTime(workshop.startsAt) : "Date to be set"}
+                        {workshop.location ? ` · ${workshop.location}` : ""}
+                      </p>
+                    </div>
+                    <span className={`pt-badge ${signup.balancePaidAt ? "is-ok" : "is-warn"}`}>
+                      {signup.balancePaidAt ? "Fully paid" : `Deposit paid · ${formatPence(signup.amountPaidPence)}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/admin/workshops" className="pt-link pt-small pt-card-foot">
+                Workshops →
+              </Link>
+            </section>
+          )}
+
           <section className="pt-card" id="packages">
             <h2>Packages</h2>
             {balances.length === 0 ? (
@@ -203,6 +230,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
               fullName={client.fullName}
               company={client.company ?? ""}
               status={client.status}
+              kind={client.kind}
             />
           </section>
         </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AddClientForm } from "@/components/admin/ClientForms";
-import { AccessBadge, StatusBadge } from "@/components/portal/AccessBadge";
+import { AccessBadge, KindBadge, StatusBadge } from "@/components/portal/AccessBadge";
 import { requireAdmin } from "@/lib/dal";
 import { listClientsOverview } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
@@ -45,7 +45,7 @@ export default async function AdminClientsPage() {
                     <span className="pt-muted pt-small pt-block">{client.company || client.email}</span>
                   </td>
                   <td data-label="Status">
-                    <StatusBadge status={client.status} />
+                    <StatusBadge status={client.status} /> <KindBadge kind={client.kind} />
                   </td>
                   <td data-label="Portal">
                     <AccessBadge access={access} />

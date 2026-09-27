@@ -22,3 +22,13 @@ export const FALLBACK_OFFER: WorkshopOffer = {
   balancePence: 37400,
   seatsLeft: null,
 };
+
+/** The date to suggest first: the soonest one with places left. */
+export function firstBookable(offers: WorkshopOffer[]) {
+  return offers.find((o) => o.seatsLeft !== 0) ?? offers[0] ?? FALLBACK_OFFER;
+}
+
+export function placesLabel(seatsLeft: number | null) {
+  if (seatsLeft == null) return null;
+  return seatsLeft === 0 ? "Fully booked" : `${seatsLeft} ${seatsLeft === 1 ? "place" : "places"} left`;
+}

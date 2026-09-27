@@ -15,3 +15,7 @@ export function StatusBadge({ status }: { status: string }) {
   const tone = status === "active" ? "is-accent" : "";
   return <span className={`pt-badge ${tone}`}>{status[0].toUpperCase() + status.slice(1)}</span>;
 }
+
+export function KindBadge({ kind }: { kind: string }) {
+  return kind === "attendee" ? <span className="pt-badge is-workshop">Workshop attendee</span> : null;
+}

@@ -165,11 +165,13 @@ export function EditClientForm({
   fullName,
   company,
   status,
+  kind,
 }: {
   clientId: number;
   fullName: string;
   company: string;
   status: string;
+  kind: string;
 }) {
   const [state, action] = useActionState(updateClient.bind(null, clientId), undefined);
   return (
@@ -189,6 +191,13 @@ export function EditClientForm({
           <option value="active">Active</option>
           <option value="paused">Paused</option>
           <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div className="pt-field">
+        <label htmlFor="kind">Type</label>
+        <select id="kind" name="kind" defaultValue={kind}>
+          <option value="client">Coaching client</option>
+          <option value="attendee">Workshop attendee</option>
         </select>
       </div>
       <FormMessage state={state} />

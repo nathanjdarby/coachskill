@@ -217,6 +217,8 @@ export async function getPortalData(clientId: number) {
     updates,
     sessions,
     unreadMessages: unread.n,
+    /** Render time, so pages can tell past from upcoming without calling Date.now() while rendering. */
+    now: Date.now(),
   };
 }
 

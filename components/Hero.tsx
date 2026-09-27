@@ -1,10 +1,11 @@
 import Image from "next/image";
-import type { WorkshopOffer } from "@/lib/workshop-offer";
+import { placesLabel, type WorkshopOffer } from "@/lib/workshop-offer";
 import { formatDateTime } from "@/lib/time";
 import { SecurePlaceButton } from "./SecurePlaceButton";
 
-export function Hero({ offer }: { offer: WorkshopOffer }) {
+export function Hero({ offers, featured: offer }: { offers: WorkshopOffer[]; featured: WorkshopOffer }) {
   const startsAt = offer.startsAt ? new Date(offer.startsAt) : null;
+  const moreDates = offers.filter((o) => o.slug !== offer.slug && o.startsAt).length;
   return (
     <section className="hero workshop-hero">
       <div className="container">
@@ -33,12 +34,17 @@ export function Hero({ offer }: { offer: WorkshopOffer }) {
                 {offer.location && <span>{offer.location}</span>}
                 {offer.seatsLeft != null && (
                   <span className={offer.seatsLeft === 0 ? "is-full" : offer.seatsLeft <= 2 ? "is-low" : ""}>
-                    {offer.seatsLeft === 0 ? "Fully booked" : `${offer.seatsLeft} ${offer.seatsLeft === 1 ? "place" : "places"} left`}
+                    {placesLabel(offer.seatsLeft)}
                   </span>
+                )}
+                {moreDates > 0 && (
+                  <a href="#dates" className="workshop-when-more">
+                    +{moreDates} more {moreDates === 1 ? "date" : "dates"}
+                  </a>
                 )}
               </p>
             )}
-            <SecurePlaceButton variant="hero" offer={offer} />
+            <SecurePlaceButton offers={offers} />
           </div>
         </div>
       </div>

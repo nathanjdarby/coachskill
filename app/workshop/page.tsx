@@ -8,8 +8,8 @@ import { WorkshopDetails } from "@/components/WorkshopDetails";
 import { TeamTraining } from "@/components/TeamTraining";
 import { Footer } from "@/components/Footer";
 import { CheckoutBanner } from "@/components/CheckoutBanner";
-import { FALLBACK_OFFER, type WorkshopOffer } from "@/lib/workshop-offer";
-import { featuredWorkshop } from "@/lib/workshops";
+import { FALLBACK_OFFER, firstBookable, type WorkshopOffer } from "@/lib/workshop-offer";
+import { listUpcomingWorkshops } from "@/lib/workshops";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +19,11 @@ export const metadata: Metadata = {
     "A focused 2.5-hour workshop that transforms how you pitch—from feature-heavy explanations to value-led storytelling.",
 };
 
-async function loadOffer(): Promise<WorkshopOffer> {
-  const w = await featuredWorkshop();
-  if (!w) return FALLBACK_OFFER;
-  return {
+/** Every upcoming published date, soonest first; the original single offer if none are set. */
+async function loadOffers(): Promise<WorkshopOffer[]> {
+  const runs = await listUpcomingWorkshops();
+  if (runs.length === 0) return [FALLBACK_OFFER];
+  return runs.map((w) => ({
     slug: w.slug,
     name: w.name,
     startsAt: w.startsAt?.toISOString() ?? null,
@@ -31,11 +32,12 @@ async function loadOffer(): Promise<WorkshopOffer> {
     depositPence: w.depositPence,
     balancePence: w.balancePence,
     seatsLeft: w.seatsLeft,
-  };
+  }));
 }
 
 export default async function WorkshopPage() {
-  const offer = await loadOffer();
+  const offers = await loadOffers();
+  const featured = firstBookable(offers);
   return (
     <>
       <Header back />
@@ -43,13 +45,13 @@ export default async function WorkshopPage() {
         <CheckoutBanner />
       </Suspense>
       <main>
-        <Hero offer={offer} />
+        <Hero offers={offers} featured={featured} />
         <div className="section-connector" />
         <Benefits />
         <div className="section-connector" />
         <Coach />
         <div className="section-connector" />
-        <WorkshopDetails offer={offer} />
+        <WorkshopDetails offers={offers} featured={featured} />
         <div className="section-connector" />
         <TeamTraining />
       </main>

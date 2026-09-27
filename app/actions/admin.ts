@@ -166,11 +166,12 @@ export async function updateClient(clientId: number, _state: FormState, formData
     return { ok: false, message: "Choose a valid status." };
   }
   if (!fullName) return { ok: false, errors: { fullName: "Enter their name." } };
+  const kind = text(formData, "kind") === "attendee" ? "attendee" : "client";
 
   const db = getDb();
   await db
     .update(clients)
-    .set({ status: status as Client["status"], fullName, company: company || null, updatedAt: new Date() })
+    .set({ status: status as Client["status"], kind, fullName, company: company || null, updatedAt: new Date() })
     .where(eq(clients.id, clientId));
   await db.update(users).set({ name: fullName, updatedAt: new Date() }).where(eq(users.clientId, clientId));
   revalidateClient(clientId);

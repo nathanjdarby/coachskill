@@ -104,6 +104,7 @@ export async function recordManualPackage(clientId: number, _state: FormState, f
       paidAt: now,
       createdAt: now,
     });
+  getDb().update(clients).set({ kind: "client", updatedAt: now }).where(eq(clients.id, clientId)).run();
   revalidatePath(`/admin/clients/${clientId}`);
   revalidatePackages();
   return { ok: true, message: `${pkg.name} recorded as paid.` };

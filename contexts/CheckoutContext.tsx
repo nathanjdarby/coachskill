@@ -13,6 +13,7 @@ import { formatDateTime } from "@/lib/time";
 import { FALLBACK_OFFER, type WorkshopOffer } from "@/lib/workshop-offer";
 
 type CheckoutContextType = {
+  /** Opens the checkout for the date the visitor has chosen on the page. */
   openCheckout: (offer?: WorkshopOffer) => void;
   closeCheckout: () => void;
 };
@@ -196,8 +197,16 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
                 className={`checkout-step ${step === 2 ? "is-active" : ""}`}
                 data-step="2"
               >
+                {offer.startsAt && (
+                  <p className="checkout-summary">
+                    {offer.name}
+                    <br />
+                    <strong>{formatDateTime(new Date(offer.startsAt))}</strong>
+                    {offer.location ? ` · ${offer.location}` : ""}
+                  </p>
+                )}
                 <div className="amount-row">
-                  Total <strong>{deposit}</strong>
+                  Deposit today <strong>{deposit}</strong>
                 </div>
                 <p className="checkout-stripe-note">
                   You&apos;ll complete payment securely on Stripe.

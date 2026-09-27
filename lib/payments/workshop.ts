@@ -2,6 +2,7 @@ import "server-only";
 import type Stripe from "stripe";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { appUrl } from "@/lib/app-url";
+import { onboardAttendee } from "@/lib/attendees";
 import { getDb } from "@/lib/db";
 import { getDefaultWorkshop, getWorkshopBySlug } from "@/lib/db/queries";
 import { signups, workshops, type Signup, type Workshop } from "@/lib/db/schema";
@@ -73,7 +74,16 @@ export async function handleDepositPaid(session: Stripe.Checkout.Session) {
     .run();
   if (claimed.changes !== 1) return;
 
-  await emailDepositConfirmed({ to: email, name, balancePence: workshop.balancePence, ...info(workshop) });
+  // Every attendee gets a client-area account; a failure here mustn't stop the confirmation.
+  let account: { url: string; isNew: boolean } | undefined;
+  try {
+    const onboarded = await onboardAttendee(row.id);
+    if (onboarded.ok) account = { url: onboarded.setupUrl ?? onboarded.portalUrl, isNew: Boolean(onboarded.setupUrl) };
+    else console.warn("Attendee onboarding skipped:", onboarded.reason);
+  } catch (err) {
+    console.error("Attendee onboarding failed", err);
+  }
+  await emailDepositConfirmed({ to: email, name, balancePence: workshop.balancePence, account, ...info(workshop) });
   await notifyAdmins(full ? `Deposit paid for a FULL workshop: ${name}` : `New workshop booking: ${name}`, [
     `${name} (${email}) paid a ${formatPence(paid)} deposit for ${workshop.name}.`,
     full ? "The run was already full, so the signup is on hold." : "",
