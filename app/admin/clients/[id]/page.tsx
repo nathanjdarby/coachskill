@@ -286,6 +286,10 @@ function SessionList({
               {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
               {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
+              {" · "}
+              <Link href={`/admin/sessions/${s.id}`} className="pt-link">
+                Notes
+              </Link>
               {s.meetingUrl && (
                 <>
                   {" · "}

@@ -1,5 +1,6 @@
 import "server-only";
 import { syncDueCalendars } from "@/lib/calendar-sync";
+import { sendDueFollowUps } from "@/lib/follow-up";
 import { sendSessionReminders1h, sendSessionReminders24h } from "./session-reminders";
 import { sendBalanceReminders, sendBalanceRequests } from "./workshop-balance";
 import { sendWorkshopReminders1h, sendWorkshopReminders24h } from "./workshop-reminders";
@@ -15,6 +16,7 @@ const JOBS: Record<string, Job> = {
   sessionReminders1h: sendSessionReminders1h,
   workshopReminders24h: sendWorkshopReminders24h,
   workshopReminders1h: sendWorkshopReminders1h,
+  sessionFollowUps: sendDueFollowUps,
 };
 
 /** Runs every scheduled job; one failing job doesn't stop the others. */

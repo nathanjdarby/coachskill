@@ -2493,3 +2493,58 @@ fieldset.pt-field {
 .pt-client-access .cn-started {
   margin-top: 10px;
 }
+
+/* — Session notes (admin) — */
+
+.sn {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sn textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.sn-status {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
+.sn-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+}
+
+.sn-preview p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.sn-preview-heading {
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.sn-preview-btn {
+  align-self: flex-start;
+  pointer-events: none;
+}
+
+.sn-follow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.sn-follow p {
+  margin: 0;
+}

@@ -172,6 +172,8 @@ export const clientNotes = sqliteTable("client_notes", {
     .references(() => users.id),
   body: text("body").notNull(),
   shared: integer("shared", { mode: "boolean" }).notNull().default(false),
+  /** The session a recap came from (a plain id, so sessions can be removed freely). */
+  sessionId: integer("session_id"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
@@ -244,7 +246,14 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   locationText: text("location_text"),
   /** Random secret signed into a prospect's manage link (/appointments/<token>); replacing it revokes old links. */
   manageTokenHash: text("manage_token_hash").unique(),
+  /** Monika's private notes. */
   notes: text("notes"),
+  /** Recap for the client or prospect, sent in the follow-up email. */
+  recap: text("recap"),
+  /** Who last edited the recap (shown as the author of the shared update). */
+  recapById: integer("recap_by_id"),
+  followUpEnabled: integer("follow_up_enabled", { mode: "boolean" }).notNull().default(true),
+  followUpSentAt: integer("follow_up_sent_at", { mode: "timestamp_ms" }),
   /** The package this session uses a credit from, if any. */
   clientPackageId: integer("client_package_id").references(() => clientPackages.id),
   title: text("title").notNull(),

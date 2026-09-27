@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import { cancelAppointmentAsAdmin, revokeBookingLink, scheduleDiscoveryCall, sendBookingLink } from "@/app/actions/appointments";
 import type { FormState } from "@/app/actions/types";
@@ -67,6 +68,10 @@ export function DiscoveryScheduling({
                   <p className="pt-muted pt-small">
                     {formatDateTime(a.startsAt)} · {a.durationMinutes} min
                     {a.cancelledAt ? " · Cancelled" : upcoming ? "" : " · Done"}
+                    {" · "}
+                    <Link href={`/admin/sessions/${a.id}`} className="pt-link">
+                      Notes
+                    </Link>
                   </p>
                 </div>
                 {upcoming && (

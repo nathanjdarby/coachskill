@@ -1,0 +1,1 @@
+ALTER TABLE `coaching_sessions` ADD `recap_by_id` integer;

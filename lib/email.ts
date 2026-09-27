@@ -284,6 +284,29 @@ export function emailAdminBooking(input: {
   });
 }
 
+/** After an appointment: thanks, Monika's recap and the next step. */
+export function emailSessionFollowUp(input: {
+  to: string;
+  name: string;
+  title: string;
+  recap: string[];
+  nextText: string;
+  button?: { label: string; url: string };
+}) {
+  return sendEmail({
+    to: input.to,
+    subject: `Thanks for today — ${input.title}`,
+    heading: `Thank you, ${firstName(input.name)}`,
+    paragraphs: [
+      `Thank you for our ${input.title.toLowerCase()} today.`,
+      ...(input.recap.length ? ["Here's a quick recap:", ...input.recap] : []),
+      input.nextText,
+    ],
+    button: input.button,
+    footnote: "Any questions in the meantime? Just reply to this email.",
+  });
+}
+
 export function emailCallNow(input: { to: string; name: string; joinUrl: string; fromName: string }) {
   return sendEmail({
     to: input.to,

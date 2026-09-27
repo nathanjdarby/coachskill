@@ -53,7 +53,7 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
         .join(" · "),
       colour: colour ?? "#22d3ee",
       joinUrl: a.meetingUrl,
-      href: a.clientId ? `/admin/clients/${a.clientId}#sessions` : a.discoveryCallId ? `/admin/discovery#request-${a.discoveryCallId}` : "/admin/calendar",
+      href: `/admin/sessions/${a.id}`,
     })),
     ...(await Promise.all(
       runs.map(async (w) => {
