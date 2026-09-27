@@ -344,7 +344,7 @@ export function DiscoveryFlow() {
         )}
       </header>
 
-      <main className="onb-main">
+      <main className={`onb-main${step === "intro" ? " onb-main-intro" : ""}`}>
         <div
           key={step}
           className={`onb-stage ${direction === 1 ? "onb-step-in" : "onb-step-back"}`}
@@ -409,7 +409,7 @@ function Intro({
   onStartOver: () => void;
 }) {
   return (
-    <div className="onb-center">
+    <div className="onb-center onb-intro">
       <Image
         src="/assets/coach-portrait.png"
         alt="Monika Kozlowska"
