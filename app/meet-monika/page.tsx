@@ -25,6 +25,7 @@ export default function MeetMonikaPage() {
                   className="coach-portrait"
                   width={320}
                   height={427}
+                  priority
                 />
               </div>
               <div className="meet-monika-hero-content">
@@ -37,6 +38,9 @@ export default function MeetMonikaPage() {
                   communication and impactful presentations, with over 18 years&apos;
                   international experience across the UK, Asia and the USA.
                 </p>
+                <Link href="/workshop" className="cta cta-hero meet-monika-hero-cta">
+                  See the Value Selling Workshop <span aria-hidden>→</span>
+                </Link>
               </div>
             </div>
           </div>
