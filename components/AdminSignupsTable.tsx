@@ -3,13 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { SignupListRow } from "@/lib/db/queries";
-
-function formatDate(d: Date) {
-  return d.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
+import { formatDateTime } from "@/lib/time";
 
 function statusBadgeClass(status: string) {
   if (status === "pending") return "admin-badge pending";
@@ -80,7 +74,7 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
 
   return (
     <div className="admin-table-wrap">
-      <table className="admin-table">
+      <table className="admin-table admin-table-stack">
         <thead>
           <tr>
             <th>When</th>
@@ -96,22 +90,22 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
         <tbody>
           {signups.map((s) => (
             <tr key={s.id}>
-              <td>{formatDate(s.createdAt)}</td>
-              <td>{s.workshopName}</td>
-              <td>{s.name}</td>
-              <td>{s.email}</td>
-              <td>{s.source}</td>
-              <td>
+              <td data-label="When">{formatDateTime(s.createdAt)}</td>
+              <td data-label="Workshop">{s.workshopName}</td>
+              <td className="admin-cell-title">{s.name}</td>
+              <td data-label="Email" className="admin-cell-email">{s.email}</td>
+              <td data-label="Source">{s.source}</td>
+              <td data-label="Status">
                 <span className={statusBadgeClass(s.status)}>{s.status}</span>
               </td>
-              <td>
+              <td className="admin-cell-notes">
                 <NotesCell
                   initialNotes={s.notes ?? ""}
                   disabled={busyId === s.id}
                   onSave={(notes) => saveNotes(s.id, notes, s.status)}
                 />
               </td>
-              <td>
+              <td className="admin-cell-actions">
                 <div className="admin-actions">
                   <button
                     type="button"
@@ -167,23 +161,10 @@ function NotesCell({
         disabled={disabled}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Internal notes"
-        style={{
-          width: "100%",
-          maxWidth: 220,
-          resize: "vertical",
-          background: "var(--bg-elevated)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: 6,
-          color: "var(--text-primary)",
-          font: "inherit",
-          fontSize: "0.8125rem",
-          padding: 6,
-        }}
       />
       <button
         type="button"
         className="admin-link-btn"
-        style={{ marginTop: 6, fontSize: "0.75rem", padding: "4px 8px" }}
         disabled={disabled}
         onClick={() => onSave(value)}
       >

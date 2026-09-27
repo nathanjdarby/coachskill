@@ -1711,6 +1711,150 @@ footer p {
   color: var(--text-secondary);
 }
 
+.admin-notes textarea {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  padding: 6px;
+  resize: vertical;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.admin-notes .admin-link-btn {
+  margin-top: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+/* Signups table becomes stacked cards on mobile */
+@media (max-width: 767px) {
+  .admin-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+
+  .admin-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .admin-filters select {
+    width: 100%;
+    padding: 11px 12px;
+  }
+
+  .admin-filters .admin-link-btn {
+    grid-column: 1 / -1;
+    padding: 12px 14px;
+    text-align: center;
+  }
+
+  .admin-table-wrap:has(.admin-table-stack) {
+    overflow: visible;
+    border: none;
+    background: none;
+  }
+
+  .admin-table-stack thead {
+    display: none;
+  }
+
+  .admin-table-stack,
+  .admin-table-stack tbody {
+    display: block;
+  }
+
+  .admin-table-stack tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-table-stack tr {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: var(--bg-card);
+  }
+
+  .admin-table-stack td {
+    display: block;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .admin-table-stack tr:last-child td {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  /* Name leads the card */
+  .admin-table-stack .admin-cell-title {
+    order: -1;
+    padding: 0 0 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .admin-table-stack td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    text-align: right;
+  }
+
+  .admin-table-stack td[data-label]::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .admin-table-stack .admin-cell-email {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-table-stack .admin-cell-notes {
+    padding-top: 12px;
+  }
+
+  .admin-table-stack .admin-notes,
+  .admin-table-stack .admin-notes textarea {
+    max-width: none;
+  }
+
+  .admin-table-stack .admin-notes textarea {
+    padding: 10px 12px;
+    font-size: 0.9375rem;
+  }
+
+  .admin-table-stack .admin-cell-actions {
+    padding: 12px 0 0;
+    border-bottom: none !important;
+  }
+
+  .admin-table-stack .admin-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-table-stack .admin-actions button {
+    padding: 11px 8px;
+    font-size: 0.875rem;
+  }
+}
+
 /* ==========================================================================
    Discovery call onboarding (/discovery-call)
    ========================================================================== */
