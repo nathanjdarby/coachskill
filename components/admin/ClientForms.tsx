@@ -8,6 +8,7 @@ import {
   addNote,
   addSession,
   becomeClient,
+  deleteClient,
   inviteClient,
   updateClient,
 } from "@/app/actions/admin";
@@ -163,15 +164,19 @@ export function Disclosure({
 export function EditClientForm({
   clientId,
   fullName,
+  email,
   company,
   status,
   kind,
+  hasAccount,
 }: {
   clientId: number;
   fullName: string;
+  email: string;
   company: string;
   status: string;
   kind: string;
+  hasAccount: boolean;
 }) {
   const [state, action] = useActionState(updateClient.bind(null, clientId), undefined);
   return (
@@ -180,6 +185,12 @@ export function EditClientForm({
         <label htmlFor="fullName">Name</label>
         <input id="fullName" name="fullName" defaultValue={fullName} required maxLength={120} />
         <FieldError state={state} name="fullName" />
+      </div>
+      <div className="pt-field">
+        <label htmlFor="client-email">Email</label>
+        <input id="client-email" name="email" type="email" defaultValue={email} required maxLength={254} />
+        {hasAccount && <span className="pt-muted pt-small">They sign in with this email, so changing it changes their login.</span>}
+        <FieldError state={state} name="email" />
       </div>
       <div className="pt-field">
         <label htmlFor="company">Company</label>
@@ -395,6 +406,30 @@ export function RecordPackageForm({ clientId, options }: { clientId: number; opt
       </div>
       <FormMessage state={state} />
       <SubmitButton variant="secondary">Record as paid</SubmitButton>
+    </form>
+  );
+}
+
+export function DeleteClientForm({ clientId, fullName }: { clientId: number; fullName: string }) {
+  const [state, action] = useActionState(deleteClient.bind(null, clientId), undefined);
+  const [typed, setTyped] = useState("");
+  const matches = typed.trim().toLowerCase() === fullName.trim().toLowerCase();
+  return (
+    <form action={action} className="pt-form">
+      <p className="pt-muted pt-small">
+        Permanently deletes {fullName}&apos;s client record, sign-in, messages, notes, sessions, packages and resource
+        shares. Workshop bookings and discovery-call answers are kept but unlinked. This can&apos;t be undone — to keep
+        their history instead, set their status to Completed.
+      </p>
+      <div className="pt-field">
+        <label htmlFor="confirmName">Type &quot;{fullName}&quot; to confirm</label>
+        <input id="confirmName" name="confirmName" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
+        <FieldError state={state} name="confirmName" />
+      </div>
+      <FormMessage state={state} />
+      <button type="submit" className="pt-btn pt-btn-danger" disabled={!matches}>
+        Delete client permanently
+      </button>
     </form>
   );
 }

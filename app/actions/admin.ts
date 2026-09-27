@@ -10,10 +10,14 @@ import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import {
   clientNotes,
+  clientPackages,
   clients,
   coachingSessions,
   discoveryCalls,
   messages,
+  passwordTokens,
+  resourceShares,
+  signups,
   users,
   type Client,
 } from "@/lib/db/schema";
@@ -167,15 +171,30 @@ export async function updateClient(clientId: number, _state: FormState, formData
   }
   if (!fullName) return { ok: false, errors: { fullName: "Enter their name." } };
   const kind = text(formData, "kind") === "attendee" ? "attendee" : "client";
+  const email = (text(formData, "email", 254) || client.email).toLowerCase();
+  if (!EMAIL_RE.test(email)) return { ok: false, errors: { email: "Enter a valid email address." } };
 
   const db = getDb();
+  if (email !== client.email.toLowerCase()) {
+    const [otherClient] = await db.select({ id: clients.id }).from(clients).where(eq(clients.email, email)).limit(1);
+    const otherUser = await findUserByEmail(email);
+    if ((otherClient && otherClient.id !== clientId) || (otherUser && otherUser.clientId !== clientId)) {
+      return { ok: false, errors: { email: `${email} already belongs to another client or account.` } };
+    }
+  }
+
+  const now = new Date();
   await db
     .update(clients)
-    .set({ status: status as Client["status"], kind, fullName, company: company || null, updatedAt: new Date() })
+    .set({ status: status as Client["status"], kind, fullName, email, company: company || null, updatedAt: now })
     .where(eq(clients.id, clientId));
-  await db.update(users).set({ name: fullName, updatedAt: new Date() }).where(eq(users.clientId, clientId));
+  // Their sign-in follows the client record's email.
+  await db.update(users).set({ name: fullName, email, updatedAt: now }).where(eq(users.clientId, clientId));
   revalidateClient(clientId);
-  return { ok: true, message: "Saved." };
+  return {
+    ok: true,
+    message: email !== client.email.toLowerCase() ? `Saved. They now sign in with ${email}.` : "Saved.",
+  };
 }
 
 async function clientAccountForEmail(clientId: number) {
@@ -286,4 +305,41 @@ export async function sendAdminMessage(clientId: number, _state: FormState, form
   }
   revalidateClient(clientId);
   return { ok: true };
+}
+
+/**
+ * Permanently deletes a client and everything that belongs only to them: their
+ * sign-in, messages, notes, sessions, packages and resource shares. Workshop
+ * bookings and discovery-call answers are kept as records but unlinked.
+ */
+export async function deleteClient(clientId: number, _state: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const client = await getClient(clientId);
+  if (!client) return { ok: false, message: "Client not found." };
+  const typed = text(formData, "confirmName", 120);
+  if (typed.toLowerCase() !== client.fullName.trim().toLowerCase()) {
+    return { ok: false, errors: { confirmName: `Type "${client.fullName}" exactly to confirm.` } };
+  }
+
+  const db = getDb();
+  db.transaction(() => {
+    const account = db.select({ id: users.id }).from(users).where(eq(users.clientId, clientId)).get();
+    db.delete(messages).where(eq(messages.clientId, clientId)).run();
+    db.delete(clientNotes).where(eq(clientNotes.clientId, clientId)).run();
+    db.delete(coachingSessions).where(eq(coachingSessions.clientId, clientId)).run();
+    db.delete(clientPackages).where(eq(clientPackages.clientId, clientId)).run();
+    db.delete(resourceShares).where(eq(resourceShares.clientId, clientId)).run();
+    db.update(signups).set({ clientId: null, updatedAt: new Date() }).where(eq(signups.clientId, clientId)).run();
+    if (account) {
+      db.delete(passwordTokens).where(eq(passwordTokens.userId, account.id)).run();
+      db.delete(users).where(eq(users.id, account.id)).run();
+    }
+    db.delete(clients).where(eq(clients.id, clientId)).run();
+  });
+
+  revalidatePath("/admin/clients");
+  revalidatePath("/admin");
+  revalidatePath("/admin/discovery");
+  revalidatePath("/admin/signups");
+  redirect("/admin/clients?deleted=1");
 }

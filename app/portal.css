@@ -1084,6 +1084,20 @@ header.pt-topbar {
   margin-top: 4px;
 }
 
+/* Admin: delete client */
+.pt-danger-zone {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.pt-danger-zone .pt-details-title {
+  color: #fca5a5;
+}
+
+.pt-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Package progress */
 .pt-meter-head {
   display: flex;

@@ -5,9 +5,9 @@ import { requireAdmin } from "@/lib/dal";
 import { listClientsOverview } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
 
-export default async function AdminClientsPage() {
+export default async function AdminClientsPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
   await requireAdmin();
-  const rows = await listClientsOverview();
+  const [rows, { deleted }] = await Promise.all([listClientsOverview(), searchParams]);
 
   return (
     <div className="pt-page">
@@ -18,6 +18,12 @@ export default async function AdminClientsPage() {
           <Link href="/admin/discovery" className="pt-link">Discovery requests</Link>, or add someone directly below.
         </p>
       </div>
+
+      {deleted && (
+        <div role="status" className="pt-alert is-ok">
+          <p>Client deleted.</p>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="pt-card">

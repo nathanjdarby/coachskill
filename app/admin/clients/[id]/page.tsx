@@ -4,6 +4,7 @@ import { deleteNote, deleteSession, sendAdminMessage } from "@/app/actions/admin
 import { cancelSessionAsAdmin } from "@/app/actions/booking";
 import {
   ConfirmSubmit,
+  DeleteClientForm,
   EditClientForm,
   InviteButton,
   NoteForm,
@@ -228,11 +229,22 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             <EditClientForm
               clientId={client.id}
               fullName={client.fullName}
+              email={client.email}
               company={client.company ?? ""}
               status={client.status}
               kind={client.kind}
+              hasAccount={Boolean(user)}
             />
           </section>
+
+          <details className="pt-card pt-details pt-danger-zone">
+            <summary>
+              <span className="pt-details-title">Delete client</span>
+            </summary>
+            <div className="pt-details-body">
+              <DeleteClientForm clientId={client.id} fullName={client.fullName} />
+            </div>
+          </details>
         </div>
       </div>
       <p className="pt-sr-only">Signed in as {admin.name}</p>
