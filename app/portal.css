@@ -982,11 +982,12 @@ header.pt-topbar {
 }
 
 /* ==========================================================================
-   Client portal: app layout on mobile
+   Client portal + admin: app layout on mobile
    ========================================================================== */
 
 .pt-tab-icon,
-.pt-mobile-only {
+.pt-mobile-only,
+.pt-mobile-inline {
   display: none;
 }
 
@@ -1003,8 +1004,16 @@ header.pt-topbar {
     display: block;
   }
 
+  .pt-mobile-inline {
+    display: inline;
+  }
+
+  .pt-desktop-inline {
+    display: none;
+  }
+
   /* Shell fills the screen: top bar, scrolling content, fixed tab bar */
-  .pt-shell-portal {
+  .pt-shell-app {
     --tabbar-h: 64px;
     min-height: 100vh;
     min-height: 100svh;
@@ -1012,7 +1021,7 @@ header.pt-topbar {
     flex-direction: column;
   }
 
-  .pt-shell-portal header.pt-topbar {
+  .pt-shell-app header.pt-topbar {
     position: sticky;
     top: 0;
     z-index: 50;
@@ -1026,28 +1035,28 @@ header.pt-topbar {
     border-bottom: 1px solid var(--border-subtle);
   }
 
-  .pt-shell-portal .pt-topbar-row {
+  .pt-shell-app .pt-topbar-row {
     width: 100%;
   }
 
-  .pt-shell-portal .pt-brand {
+  .pt-shell-app .pt-brand {
     gap: 8px;
     color: var(--text-primary);
   }
 
-  .pt-shell-portal .pt-user .pt-nav-link {
+  .pt-shell-app .pt-user .pt-nav-link {
     padding: 6px 14px;
     border: 1px solid var(--border-subtle);
     border-radius: 999px;
     font-size: 0.875rem;
   }
 
-  .pt-shell-portal .pt-user .pt-nav-link.is-active {
+  .pt-shell-app .pt-user .pt-nav-link.is-active {
     border-color: rgba(34, 211, 238, 0.5);
   }
 
   /* Bottom tab bar */
-  .pt-shell-portal .pt-tabbar {
+  .pt-shell-app .pt-tabbar {
     position: fixed;
     left: 0;
     right: 0;
@@ -1065,7 +1074,7 @@ header.pt-topbar {
     border-top: 1px solid var(--border-subtle);
   }
 
-  .pt-shell-portal .pt-tabbar .pt-nav-link {
+  .pt-shell-app .pt-tabbar .pt-nav-link {
     position: relative;
     height: var(--tabbar-h);
     flex-direction: column;
@@ -1079,15 +1088,15 @@ header.pt-topbar {
     color: var(--text-muted);
   }
 
-  .pt-shell-portal .pt-tabbar .pt-nav-link.is-active {
+  .pt-shell-app .pt-tabbar .pt-nav-link.is-active {
     color: var(--accent-cyan);
   }
 
-  .pt-shell-portal .pt-tab-icon {
+  .pt-shell-app .pt-tab-icon {
     display: block;
   }
 
-  .pt-shell-portal .pt-tabbar .pt-nav-count {
+  .pt-shell-app .pt-tabbar .pt-nav-count {
     position: absolute;
     top: 8px;
     left: calc(50% + 6px);
@@ -1097,7 +1106,7 @@ header.pt-topbar {
     line-height: 18px;
   }
 
-  .pt-shell-portal .pt-main {
+  .pt-shell-app .pt-main {
     flex: 1;
     width: 100%;
     padding-top: 20px;
@@ -1105,44 +1114,44 @@ header.pt-topbar {
   }
 
   /* Tighter cards and headings */
-  .pt-shell-portal .pt-page {
+  .pt-shell-app .pt-page {
     gap: 14px;
   }
 
-  .pt-shell-portal .pt-columns {
+  .pt-shell-app .pt-columns {
     gap: 14px;
   }
 
-  .pt-shell-portal .pt-card {
+  .pt-shell-app .pt-card {
     padding: 18px;
   }
 
-  .pt-shell-portal .pt-page-head h1 {
+  .pt-shell-app .pt-page-head h1 {
     font-size: 1.875rem;
   }
 
-  .pt-shell-portal .pt-page-head {
+  .pt-shell-app .pt-page-head {
     margin-bottom: 4px;
   }
 
-  .pt-shell-portal .pt-card > .pt-btn,
-  .pt-shell-portal .pt-card .pt-form > .pt-btn {
+  .pt-shell-app .pt-card > .pt-btn,
+  .pt-shell-app .pt-card .pt-form > .pt-btn {
     width: 100%;
     padding: 13px 18px;
   }
 
-  .pt-shell-portal .pt-session .pt-btn {
+  .pt-shell-app .pt-session .pt-btn {
     flex: none;
     padding: 9px 16px;
   }
 
   /* Messages: a full-screen chat — thread scrolls, composer sits above the tab bar */
-  .pt-shell-portal:has(.pt-messages-page) {
+  .pt-shell-app:has(.pt-messages-page) {
     height: 100vh;
     height: 100svh;
   }
 
-  .pt-shell-portal:has(.pt-messages-page) .pt-main {
+  .pt-shell-app:has(.pt-messages-page) .pt-main {
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -1214,5 +1223,70 @@ header.pt-topbar {
 
   .pt-messages-card .pt-composer > :not(textarea):not(.pt-composer-actions):not(label) {
     grid-column: 1 / -1;
+  }
+
+  /* Tables that opt in become stacked cards: first cell is the title, the rest are label/value rows */
+  .pt-table-stack thead {
+    display: none;
+  }
+
+  .pt-table-stack,
+  .pt-table-stack tbody,
+  .pt-table-stack tr,
+  .pt-table-stack td {
+    display: block;
+  }
+
+  .pt-table-wrap:has(.pt-table-stack) {
+    overflow: visible;
+    border: none;
+    background: none;
+  }
+
+  .pt-table-stack tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pt-table-stack tr {
+    padding: 14px 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: var(--bg-card);
+  }
+
+  .pt-table-stack td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .pt-table-stack td:first-child {
+    padding-top: 0;
+    padding-bottom: 10px;
+  }
+
+  .pt-table-stack tr td:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .pt-table-stack td[data-label] {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+    justify-items: end;
+    align-items: center;
+    text-align: right;
+  }
+
+  .pt-table-stack td[data-label]::before {
+    content: attr(data-label);
+    grid-row: 1 / span 3;
+    align-self: start;
+    justify-self: start;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
   }
 }

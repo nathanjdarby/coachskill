@@ -13,7 +13,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const user = await requireClient();
   const unread = await unreadCountForClient(user.clientId);
   return (
-    <div className="pt-shell pt-shell-portal">
+    <div className="pt-shell pt-shell-app pt-shell-portal">
       <header className="pt-topbar">
         <div className="pt-topbar-row">
           <Link href="/portal" className="pt-brand">

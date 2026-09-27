@@ -25,7 +25,7 @@ export default async function AdminClientsPage() {
         </div>
       ) : (
         <div className="pt-table-wrap">
-          <table className="pt-table">
+          <table className="pt-table pt-table-stack">
             <thead>
               <tr>
                 <th>Client</th>
@@ -44,19 +44,19 @@ export default async function AdminClientsPage() {
                     </Link>
                     <span className="pt-muted pt-small pt-block">{client.company || client.email}</span>
                   </td>
-                  <td>
+                  <td data-label="Status">
                     <StatusBadge status={client.status} />
                   </td>
-                  <td>
+                  <td data-label="Portal">
                     <AccessBadge access={access} />
                     {lastLoginAt && (
                       <span className="pt-muted pt-small pt-block">Last in {formatDate(lastLoginAt)}</span>
                     )}
                   </td>
-                  <td className="pt-small">
+                  <td className="pt-small" data-label="Next session">
                     {nextSession ? formatDateTime(nextSession.startsAt) : <span className="pt-muted">—</span>}
                   </td>
-                  <td>{unread > 0 ? <span className="pt-badge is-accent">{unread} new</span> : <span className="pt-muted">—</span>}</td>
+                  <td data-label="Messages">{unread > 0 ? <span className="pt-badge is-accent">{unread} new</span> : <span className="pt-muted">—</span>}</td>
                 </tr>
               ))}
             </tbody>
