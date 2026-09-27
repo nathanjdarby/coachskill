@@ -6,13 +6,17 @@ import {
   EditClientForm,
   InviteButton,
   NoteForm,
+  RecordPackageForm,
   SessionForm,
 } from "@/components/admin/ClientForms";
+import { PackageMeter } from "@/components/portal/PackageMeter";
 import { AccessBadge, StatusBadge } from "@/components/portal/AccessBadge";
 import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
 import { requireAdmin } from "@/lib/dal";
 import { personaLabel } from "@/lib/discovery";
+import { formatPence } from "@/lib/money";
+import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { getClientDetail, markMessagesRead, splitSessions } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
 
@@ -27,6 +31,12 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
 
   const { client, user, access, discovery, notes, sessions, messages } = detail;
   const { upcoming, past } = splitSessions(sessions);
+  const [balances, catalogue] = await Promise.all([packageBalances(id), listPackages()]);
+  const credit = activeCredit(balances);
+  const creditOptions = balances
+    .filter((b) => b.remaining > 0)
+    .map((b) => ({ id: b.id, label: `${b.name} (${b.remaining} of ${b.sessionCount} left)` }));
+  const packageNames = new Map(balances.map((b) => [b.id, b.name]));
 
   return (
     <div className="pt-page">
@@ -120,18 +130,44 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             {upcoming.length > 0 && (
               <>
                 <h3 className="pt-subhead">Upcoming</h3>
-                <SessionList sessions={upcoming} clientId={client.id} />
+                <SessionList sessions={upcoming} clientId={client.id} packageNames={packageNames} />
               </>
             )}
             {past.length > 0 && (
               <>
                 <h3 className="pt-subhead">Past</h3>
-                <SessionList sessions={past} clientId={client.id} />
+                <SessionList sessions={past} clientId={client.id} packageNames={packageNames} />
               </>
             )}
             <details className="pt-inline-details">
               <summary className="pt-link">+ Add a session</summary>
-              <SessionForm clientId={client.id} />
+              <SessionForm clientId={client.id} packageOptions={creditOptions} defaultPackageId={credit?.id ?? null} />
+            </details>
+          </section>
+
+          <section className="pt-card" id="packages">
+            <h2>Packages</h2>
+            {balances.length === 0 ? (
+              <p className="pt-muted">No packages yet. They can buy one from their client area, or record one below.</p>
+            ) : (
+              <ul className="pt-package-list">
+                {balances.map((b) => (
+                  <li key={b.id}>
+                    <PackageMeter name={b.name} used={b.used} total={b.sessionCount} />
+                    <p className="pt-muted pt-small">
+                      {formatPence(b.pricePence)} · {b.source === "manual" ? "Recorded manually" : "Paid by card"}
+                      {b.paidAt ? ` · ${formatDate(b.paidAt)}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <details className="pt-inline-details">
+              <summary className="pt-link">+ Record a package</summary>
+              <RecordPackageForm
+                clientId={client.id}
+                options={catalogue.map((p) => ({ id: p.id, label: `${p.name} — ${p.sessionCount} sessions, ${formatPence(p.pricePence)}${p.active ? "" : " (hidden)"}` }))}
+              />
             </details>
           </section>
 
@@ -178,9 +214,18 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
 function SessionList({
   sessions,
   clientId,
+  packageNames,
 }: {
-  sessions: { id: number; title: string; startsAt: Date; durationMinutes: number; meetingUrl: string | null }[];
+  sessions: {
+    id: number;
+    title: string;
+    startsAt: Date;
+    durationMinutes: number;
+    meetingUrl: string | null;
+    clientPackageId: number | null;
+  }[];
   clientId: number;
+  packageNames: Map<number, string>;
 }) {
   return (
     <ul className="pt-sessions">
@@ -190,6 +235,7 @@ function SessionList({
             <p className="pt-session-title">{s.title}</p>
             <p className="pt-muted pt-small">
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
+              {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
               {s.meetingUrl && (
                 <>
                   {" · "}

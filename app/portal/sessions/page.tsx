@@ -1,10 +1,18 @@
+import { PackagesCard } from "@/components/portal/PackagesCard";
 import { requireClient } from "@/lib/dal";
+import { listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
-export default async function PortalSessionsPage() {
+export default async function PortalSessionsPage({ searchParams }: { searchParams: Promise<{ purchase?: string }> }) {
   const user = await requireClient();
-  const { upcoming, past } = splitSessions(await listSessions(user.clientId));
+  const [{ purchase }, sessions, balances, offers] = await Promise.all([
+    searchParams,
+    listSessions(user.clientId),
+    packageBalances(user.clientId),
+    listPackages({ activeOnly: true }),
+  ]);
+  const { upcoming, past } = splitSessions(sessions);
 
   return (
     <div className="pt-page pt-narrow">
@@ -12,6 +20,19 @@ export default async function PortalSessionsPage() {
         <h1>Sessions</h1>
         <p className="pt-muted">All times are UK time.</p>
       </div>
+
+      {purchase === "success" && (
+        <div role="status" className="pt-alert is-ok">
+          <p>Thank you — your package is confirmed. It can take a moment to appear; refresh if you don&apos;t see it yet.</p>
+        </div>
+      )}
+      {purchase === "canceled" && (
+        <div role="status" className="pt-alert is-warn">
+          <p>Payment cancelled — nothing was charged.</p>
+        </div>
+      )}
+
+      <PackagesCard balances={balances} offers={offers} />
 
       <section className="pt-card">
         <h2>Upcoming</h2>

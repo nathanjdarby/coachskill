@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
+import { recordManualPackage } from "@/app/actions/packages";
 import {
   addClient,
   addNote,
@@ -229,7 +230,17 @@ export function NoteForm({ clientId, canShare }: { clientId: number; canShare: b
   );
 }
 
-export function SessionForm({ clientId }: { clientId: number }) {
+export type PackageOption = { id: number; label: string };
+
+export function SessionForm({
+  clientId,
+  packageOptions = [],
+  defaultPackageId = null,
+}: {
+  clientId: number;
+  packageOptions?: PackageOption[];
+  defaultPackageId?: number | null;
+}) {
   const [state, action] = useActionState(addSession.bind(null, clientId), undefined);
   const f = state?.fields;
   return (
@@ -260,6 +271,24 @@ export function SessionForm({ clientId }: { clientId: number }) {
           <FieldError state={state} name="durationMinutes" />
         </div>
       </div>
+      {packageOptions.length > 0 && (
+        <div className="pt-field">
+          <label htmlFor="clientPackageId">Count against package</label>
+          <select
+            id="clientPackageId"
+            name="clientPackageId"
+            defaultValue={state?.ok || !f ? String(defaultPackageId ?? "") : f.clientPackageId}
+          >
+            <option value="">Don&apos;t use a package session</option>
+            {packageOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <FieldError state={state} name="clientPackageId" />
+        </div>
+      )}
       <div className="pt-field">
         <label htmlFor="meetingUrl">Meeting link (optional)</label>
         <input id="meetingUrl" name="meetingUrl" type="url" defaultValue={state?.ok ? "" : f?.meetingUrl} placeholder="https://zoom.us/j/…" maxLength={500} />
@@ -323,5 +352,40 @@ export function ConfirmSubmit({ label, confirmText }: { label: string; confirmTe
     >
       {label}
     </button>
+  );
+}
+
+export function RecordPackageForm({ clientId, options }: { clientId: number; options: PackageOption[] }) {
+  const [state, action] = useActionState(recordManualPackage.bind(null, clientId), undefined);
+  if (options.length === 0) {
+    return (
+      <p className="pt-muted pt-small">
+        Create a package first in{" "}
+        <Link href="/admin/packages" className="pt-link">
+          Packages
+        </Link>
+        .
+      </p>
+    );
+  }
+  return (
+    <form action={action} className="pt-form" key={state?.ok ? "reset" : "edit"}>
+      <div className="pt-field">
+        <label htmlFor="packageId">Package paid outside Stripe</label>
+        <select id="packageId" name="packageId" defaultValue="" required>
+          <option value="" disabled>
+            Choose a package…
+          </option>
+          {options.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <FieldError state={state} name="packageId" />
+      </div>
+      <FormMessage state={state} />
+      <SubmitButton variant="secondary">Record as paid</SubmitButton>
+    </form>
   );
 }

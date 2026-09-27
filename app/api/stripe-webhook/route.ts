@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { getDb } from "@/lib/db";
 import { stripeEvents } from "@/lib/db/schema";
+import { handlePackagePaid } from "@/lib/payments/package";
 import { handleBalancePaid, handleDepositPaid } from "@/lib/payments/workshop";
 import { getStripe, type CheckoutKind } from "@/lib/stripe";
 
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     if (kind === "workshop_deposit") await handleDepositPaid(session);
     else if (kind === "workshop_balance") await handleBalancePaid(session);
+    else if (kind === "package") await handlePackagePaid(session);
     else console.warn("Stripe webhook: unhandled checkout kind", kind, session.id);
   } catch (err) {
     // Let Stripe retry: forget the event so the retry isn't treated as a duplicate.

@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PackagesCard } from "@/components/portal/PackagesCard";
 import { requireClient } from "@/lib/dal";
+import { listPackages, packageBalances } from "@/lib/packages";
 import { getPortalData, splitSessions } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
 
 export default async function PortalHomePage() {
   const user = await requireClient();
-  const data = await getPortalData(user.clientId);
+  const [data, balances, offers] = await Promise.all([
+    getPortalData(user.clientId),
+    packageBalances(user.clientId),
+    listPackages({ activeOnly: true }),
+  ]);
   if (!data) notFound();
 
   const { upcoming } = splitSessions(data.sessions);
@@ -57,6 +63,8 @@ export default async function PortalHomePage() {
           </Link>
         </section>
       </div>
+
+      <PackagesCard balances={balances} offers={offers} />
 
       <section className="pt-card">
         <div className="pt-card-head">

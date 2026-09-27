@@ -154,11 +154,48 @@ export const clientNotes = sqliteTable("client_notes", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+/** Coaching packages Monika sells (e.g. a 3-session intensive). */
+export const packages = sqliteTable("packages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  pricePence: integer("price_pence").notNull(),
+  sessionCount: integer("session_count").notNull(),
+  sessionMinutes: integer("session_minutes").notNull().default(60),
+  /** Inactive packages can't be bought but stay on past purchases. */
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** A package bought by (or recorded for) a client. Name/price/sessions are copied at purchase. */
+export const clientPackages = sqliteTable("client_packages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  packageId: integer("package_id")
+    .notNull()
+    .references(() => packages.id),
+  name: text("name").notNull(),
+  pricePence: integer("price_pence").notNull(),
+  sessionCount: integer("session_count").notNull(),
+  sessionMinutes: integer("session_minutes").notNull(),
+  status: text("status", { enum: ["pending", "paid", "cancelled"] }).notNull().default("pending"),
+  source: text("source", { enum: ["stripe", "manual"] }).notNull(),
+  stripeSessionId: text("stripe_session_id").unique(),
+  paidAt: integer("paid_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const coachingSessions = sqliteTable("coaching_sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   clientId: integer("client_id")
     .notNull()
     .references(() => clients.id),
+  /** The package this session uses a credit from, if any. */
+  clientPackageId: integer("client_package_id").references(() => clientPackages.id),
   title: text("title").notNull(),
   startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
@@ -185,3 +222,6 @@ export type User = typeof users.$inferSelect;
 export type ClientNote = typeof clientNotes.$inferSelect;
 export type CoachingSession = typeof coachingSessions.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+
+export type Package = typeof packages.$inferSelect;
+export type ClientPackage = typeof clientPackages.$inferSelect;

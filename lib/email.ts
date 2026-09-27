@@ -224,3 +224,17 @@ export function emailAdminPayment(input: { to: string[]; subject: string; lines:
     button: { label: "Open in admin", url: input.url },
   });
 }
+
+export function emailPackagePurchased(input: { to: string; name: string; packageName: string; sessionCount: number; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Thank you: ${input.packageName}`,
+    heading: `Thanks ${firstName(input.name)}, you're all set`,
+    paragraphs: [
+      `Your ${input.packageName} is confirmed — that's ${input.sessionCount} coaching ${input.sessionCount === 1 ? "session" : "sessions"} together.`,
+      "You can see your sessions and what's left in your package in your client area. I'll be in touch to arrange our first session.",
+    ],
+    button: { label: "Open your client area", url: input.url },
+    footnote: "Your payment receipt comes separately from Stripe.",
+  });
+}

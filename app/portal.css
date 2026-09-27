@@ -1050,6 +1050,125 @@ header.pt-topbar {
   }
 }
 
+/* Package progress */
+.pt-meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pt-meter-name {
+  font-weight: 600;
+}
+
+.pt-meter-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pt-meter-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.pt-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+}
+
+.pt-package-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  list-style: none;
+  margin-bottom: 4px;
+}
+
+.pt-package-list .pt-muted {
+  margin-top: 6px;
+}
+
+.pt-package-price {
+  margin-top: 2px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+.pt-package-options {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin-top: 4px;
+}
+
+.pt-package-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+
+.pt-package-option h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pt-package-option form {
+  margin-top: 8px;
+}
+
+/* Link list (admin More page) */
+.pt-link-list {
+  list-style: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.pt-link-list li + li {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pt-link-list a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.pt-link-list a > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.pt-link-list-title {
+  font-weight: 600;
+}
+
+.pt-link-list-chevron {
+  color: var(--text-muted);
+  font-size: 1.25rem;
+}
+
+.pt-mobile-flex {
+  display: none !important;
+}
+
 /* ==========================================================================
    Client portal + admin: app layout on mobile
    ========================================================================== */
@@ -1077,8 +1196,13 @@ header.pt-topbar {
     display: inline;
   }
 
-  .pt-desktop-inline {
-    display: none;
+  .pt-desktop-inline,
+  .pt-desktop-flex {
+    display: none !important;
+  }
+
+  .pt-mobile-flex {
+    display: flex !important;
   }
 
   /* Shell fills the screen: top bar, scrolling content, fixed tab bar */
@@ -1205,6 +1329,11 @@ header.pt-topbar {
 
   .pt-shell-app .pt-card > .pt-btn,
   .pt-shell-app .pt-card .pt-form > .pt-btn {
+    width: 100%;
+    padding: 13px 18px;
+  }
+
+  .pt-shell-app .pt-package-option .pt-btn {
     width: 100%;
     padding: 13px 18px;
   }

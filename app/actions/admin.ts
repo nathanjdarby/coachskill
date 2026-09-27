@@ -23,6 +23,7 @@ import {
   emailSessionBooked,
   emailSharedUpdate,
 } from "@/lib/email";
+import { packageBalances } from "@/lib/packages";
 import { hasEarlierUnread, portalAccess } from "@/lib/portal";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
@@ -224,13 +225,22 @@ export async function addSession(clientId: number, _state: FormState, formData: 
   if (!startsAt) errors.startsAt = "Choose a date and time.";
   if (!Number.isInteger(duration) || duration < 5 || duration > 600) errors.durationMinutes = "Between 5 and 600 minutes.";
   if (fields.meetingUrl && !/^https:\/\/\S+$/.test(fields.meetingUrl)) errors.meetingUrl = "Use a full https:// link.";
-  if (Object.keys(errors).length || !startsAt) return { errors, fields };
+  const packageField = text(formData, "clientPackageId", 10);
+  let clientPackageId: number | null = null;
+  if (packageField) {
+    const credit = (await packageBalances(clientId)).find((b) => b.id === Number(packageField));
+    if (!credit) errors.clientPackageId = "Choose one of this client's packages.";
+    else if (credit.remaining < 1) errors.clientPackageId = "That package has no sessions left.";
+    else clientPackageId = credit.id;
+  }
+  if (Object.keys(errors).length || !startsAt) return { errors, fields: { ...fields, clientPackageId: packageField } };
   if (!(await getClient(clientId))) return { ok: false, message: "Client not found." };
 
   await getDb()
     .insert(coachingSessions)
     .values({
       clientId,
+      clientPackageId,
       title: fields.title,
       startsAt,
       durationMinutes: duration,
