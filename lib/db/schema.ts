@@ -16,6 +16,11 @@ export const workshops = sqliteTable("workshops", {
   startsAt: integer("starts_at", { mode: "timestamp_ms" }),
   durationMinutes: integer("duration_minutes").notNull().default(150),
   location: text("location"),
+  /** Online with an automatic video room, online with Monika's own link, or in person (location text only). */
+  locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person"] }).notNull().default("in_person"),
+  meetingUrl: text("meeting_url"),
+  /** Bumped when the time or joining details change, so calendar invites update. */
+  icsSequence: integer("ics_sequence").notNull().default(0),
   /** Null means no seat limit. */
   capacity: integer("capacity"),
   depositPence: integer("deposit_pence").notNull().default(2500),
@@ -59,6 +64,8 @@ export const signups = sqliteTable(
     balancePaidAt: integer("balance_paid_at", { mode: "timestamp_ms" }),
     /** The client-area account this booking belongs to (set when the attendee is onboarded). */
     clientId: integer("client_id"),
+    reminder24hSentAt: integer("reminder_24h_sent_at", { mode: "timestamp_ms" }),
+    reminder1hSentAt: integer("reminder_1h_sent_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },

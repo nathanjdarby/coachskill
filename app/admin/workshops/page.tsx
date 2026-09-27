@@ -49,6 +49,20 @@ export default async function AdminWorkshopsPage() {
               {w.startsAt ? `${formatDateTime(w.startsAt)} (UK)` : "No date set"}
               {w.location ? ` · ${w.location}` : ""}
             </p>
+            {w.locationMode !== "in_person" && (
+              <p className="pt-small">
+                {w.meetingUrl ? (
+                  <>
+                    <span className="pt-muted">Join link: </span>
+                    <a href={w.meetingUrl} className="pt-link" target="_blank" rel="noopener noreferrer">
+                      {w.meetingUrl.replace(/^https:\/\//, "")}
+                    </a>
+                  </>
+                ) : (
+                  <span className="pt-muted">Online — add the meeting link</span>
+                )}
+              </p>
+            )}
 
             <dl className="pt-workshop-stats">
               <div>
@@ -95,6 +109,8 @@ export default async function AdminWorkshopsPage() {
                     startsAt: w.startsAt ? toLondonInputValue(w.startsAt) : "",
                     durationMinutes: String(w.durationMinutes),
                     location: w.location ?? "",
+                    locationMode: w.locationMode,
+                    meetingUrl: w.locationMode === "custom" ? (w.meetingUrl ?? "") : "",
                     capacity: w.capacity == null ? "" : String(w.capacity),
                     deposit: String(w.depositPence / 100),
                     balance: String(w.balancePence / 100),

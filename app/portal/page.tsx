@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PackagesCard } from "@/components/portal/PackagesCard";
 import { WorkshopCard, type PortalBooking } from "@/components/portal/WorkshopCard";
 import { workshopBookingsFor } from "@/lib/attendees";
+import { workshopJoinUrl } from "@/lib/workshop-invite";
 import { requireClient } from "@/lib/dal";
 import { balancePayUrl } from "@/lib/payments/workshop";
 import { listPackages, packageBalances } from "@/lib/packages";
@@ -36,6 +37,7 @@ export default async function PortalHomePage() {
         amountPaidPence: signup.amountPaidPence,
         balancePaidAt: signup.balancePaidAt,
         payUrl: !past && !signup.balancePaidAt && workshop.balancePence > 0 ? await balancePayUrl(signup.id) : null,
+        joinUrl: past ? null : workshopJoinUrl(workshop),
         past,
       };
     }),

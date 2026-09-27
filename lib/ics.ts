@@ -6,6 +6,9 @@
 
 type IcsEvent = {
   sessionId: number;
+  /** Overrides the session-based UID (e.g. workshop invites). */
+  uid?: string;
+  location?: string | null;
   sequence: number;
   method: "REQUEST" | "CANCEL";
   start: Date;
@@ -80,13 +83,14 @@ export function buildIcs(e: IcsEvent) {
     "CALSCALE:GREGORIAN",
     `METHOD:${e.method}`,
     ...veventLines({
-      uid: `session-${e.sessionId}@coachskill.co.uk`,
+      uid: e.uid ?? `session-${e.sessionId}@coachskill.co.uk`,
       sequence: e.sequence,
       start: e.start,
       durationMinutes: e.durationMinutes,
       title: e.title,
       description: e.description,
       url: e.url,
+      location: e.location,
       organizerEmail: e.organizerEmail,
       cancelled: e.method === "CANCEL",
     }),
@@ -113,9 +117,9 @@ export function buildFeed(name: string, events: VEvent[]) {
 }
 
 /** An email attachment for the invite. */
-export function icsAttachment(e: IcsEvent) {
+export function icsAttachment(e: IcsEvent, name = "session") {
   return {
-    filename: e.method === "CANCEL" ? "cancelled-session.ics" : "session.ics",
+    filename: e.method === "CANCEL" ? `cancelled-${name}.ics` : `${name}.ics`,
     content: Buffer.from(buildIcs(e)).toString("base64"),
     contentType: `text/calendar; charset=utf-8; method=${e.method}`,
   };

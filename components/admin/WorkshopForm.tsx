@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { saveWorkshop } from "@/app/actions/workshops";
 import { FieldError, FormMessage, SubmitButton } from "@/components/portal/FormBits";
 
@@ -10,6 +10,8 @@ export type WorkshopFormValues = {
   startsAt: string;
   durationMinutes: string;
   location: string;
+  locationMode: "jitsi" | "custom" | "in_person";
+  meetingUrl: string;
   capacity: string;
   deposit: string;
   balance: string;
@@ -22,6 +24,8 @@ export const NEW_WORKSHOP: WorkshopFormValues = {
   startsAt: "",
   durationMinutes: "150",
   location: "",
+  locationMode: "jitsi",
+  meetingUrl: "",
   capacity: "5",
   deposit: "25",
   balance: "374",
@@ -33,6 +37,8 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
   const f = state?.fields;
   const v = (key: keyof WorkshopFormValues) => (f?.[key] ?? String(initial[key]));
   const p = id == null ? "new" : `w${id}`;
+  const submittedMode = f?.locationMode as WorkshopFormValues["locationMode"] | undefined;
+  const [mode, setMode] = useState(submittedMode ?? initial.locationMode);
 
   return (
     <form action={action} className="pt-form" key={id == null && state?.ok ? "reset" : "edit"}>
@@ -54,8 +60,38 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
         </div>
       </div>
       <div className="pt-field">
-        <label htmlFor={`${p}-location`}>Location (optional)</label>
-        <input id={`${p}-location`} name="location" defaultValue={v("location")} placeholder="e.g. Online (Zoom) or a venue address" maxLength={200} />
+        <label htmlFor={`${p}-locationMode`}>Where</label>
+        <select
+          id={`${p}-locationMode`}
+          name="locationMode"
+          key={`loc-${submittedMode ?? initial.locationMode}`}
+          defaultValue={submittedMode ?? initial.locationMode}
+          onChange={(e) => setMode(e.target.value as WorkshopFormValues["locationMode"])}
+        >
+          <option value="jitsi">Online — automatic private video room</option>
+          <option value="custom">Online — my own meeting link (Zoom, Teams…)</option>
+          <option value="in_person">In person</option>
+        </select>
+        {mode === "jitsi" && (
+          <p className="pt-muted pt-small">Attendees get the join link in their confirmation, calendar invite, reminders and client area.</p>
+        )}
+      </div>
+      {mode === "custom" && (
+        <div className="pt-field">
+          <label htmlFor={`${p}-meetingUrl`}>Meeting link</label>
+          <input id={`${p}-meetingUrl`} name="meetingUrl" type="url" defaultValue={v("meetingUrl")} placeholder="https://zoom.us/j/…" maxLength={500} required />
+          <FieldError state={state} name="meetingUrl" />
+        </div>
+      )}
+      <div className="pt-field">
+        <label htmlFor={`${p}-location`}>{mode === "in_person" ? "Venue" : "Location note (optional)"}</label>
+        <input
+          id={`${p}-location`}
+          name="location"
+          defaultValue={v("location")}
+          placeholder={mode === "in_person" ? "Venue name and address" : "e.g. Online"}
+          maxLength={200}
+        />
       </div>
       <div className="pt-field-grid pt-field-grid-3">
         <div className="pt-field">
@@ -83,6 +119,12 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
         <input type="checkbox" name="published" defaultChecked={f ? f.published === "on" : initial.published} />
         <span>Show on the public workshop page</span>
       </label>
+      {id != null && (
+        <label className="pt-check">
+          <input type="checkbox" name="notify" defaultChecked />
+          <span>If the time or joining details change, email booked attendees an update</span>
+        </label>
+      )}
       <FormMessage state={state} />
       <SubmitButton>{id == null ? "Create workshop" : "Save changes"}</SubmitButton>
     </form>

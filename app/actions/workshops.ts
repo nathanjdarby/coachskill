@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { onboardAttendee } from "@/lib/attendees";
@@ -8,6 +9,8 @@ import { getDb } from "@/lib/db";
 import { signups, workshops } from "@/lib/db/schema";
 import { emailAttendeeInvite } from "@/lib/email";
 import { sendBalanceLinkNow } from "@/lib/jobs/workshop-balance";
+import { isJitsiUrl, newJitsiUrl } from "@/lib/meeting";
+import { notifyWorkshopChange, seatHolders, workshopJoinUrl } from "@/lib/workshop-invite";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
 
@@ -43,11 +46,15 @@ export async function saveWorkshop(id: number | null, _state: FormState, formDat
     startsAt: text(formData, "startsAt", 40),
     durationMinutes: text(formData, "durationMinutes", 5),
     location: text(formData, "location", 200),
+    locationMode: text(formData, "locationMode", 20),
+    meetingUrl: text(formData, "meetingUrl", 500),
     capacity: text(formData, "capacity", 5),
     deposit: text(formData, "deposit", 10),
     balance: text(formData, "balance", 10),
     published: formData.get("published") === "on" ? "on" : "",
+    notify: formData.get("notify") === "on" ? "on" : "",
   };
+  const locationMode = (["jitsi", "custom", "in_person"] as const).find((m) => m === fields.locationMode) ?? "in_person";
   const errors: Record<string, string> = {};
   const startsAt = parseLondonDateTime(fields.startsAt);
   const duration = Number(fields.durationMinutes);
@@ -60,6 +67,7 @@ export async function saveWorkshop(id: number | null, _state: FormState, formDat
   if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) errors.capacity = "A whole number, or leave blank for no limit.";
   if (depositPence === null || depositPence < 100) errors.deposit = "At least £1.";
   if (balancePence === null) errors.balance = "Enter an amount (0 for none).";
+  if (locationMode === "custom" && !/^https:\/\/\S+$/.test(fields.meetingUrl)) errors.meetingUrl = "Paste the full https:// meeting link.";
 
   const date = startsAt ? startsAt.toISOString().slice(0, 7) : "";
   const slug = slugify(fields.slug || `${fields.name}-${date}`);
@@ -72,6 +80,18 @@ export async function saveWorkshop(id: number | null, _state: FormState, formDat
   }
   if (Object.keys(errors).length || !startsAt || depositPence === null || balancePence === null) return { errors, fields };
 
+  const existing = id == null ? undefined : (await db.select().from(workshops).where(eq(workshops.id, id)).limit(1))[0];
+  if (id != null && !existing) return { ok: false, message: "Workshop not found." };
+  // Keep a run's video room once it has one, so links already sent keep working.
+  const meetingUrl =
+    locationMode === "jitsi"
+      ? existing?.meetingUrl && isJitsiUrl(existing.meetingUrl)
+        ? existing.meetingUrl
+        : newJitsiUrl()
+      : locationMode === "custom"
+        ? fields.meetingUrl
+        : null;
+
   const now = new Date();
   const values = {
     name: fields.name,
@@ -79,20 +99,43 @@ export async function saveWorkshop(id: number | null, _state: FormState, formDat
     startsAt,
     durationMinutes: duration,
     location: fields.location || null,
+    locationMode,
+    meetingUrl,
     capacity,
     depositPence,
     balancePence,
     published: fields.published === "on",
     updatedAt: now,
   };
-  if (id == null) {
+  if (id == null || !existing) {
     await db.insert(workshops).values({ ...values, createdAt: now });
-  } else {
-    const result = db.update(workshops).set(values).where(eq(workshops.id, id)).run();
-    if (result.changes !== 1) return { ok: false, message: "Workshop not found." };
+    revalidateWorkshops();
+    return { ok: true, message: "Workshop created." };
   }
+
+  // Did anything attendees rely on change? Then calendar invites need updating.
+  const moved = existing.startsAt?.getTime() !== startsAt.getTime();
+  const detailsChanged =
+    moved ||
+    existing.durationMinutes !== duration ||
+    (existing.location ?? null) !== values.location ||
+    workshopJoinUrl(existing) !== workshopJoinUrl(values);
+  db.transaction(() => {
+    db.update(workshops)
+      .set({ ...values, ...(detailsChanged ? { icsSequence: sql`${workshops.icsSequence} + 1` } : {}) })
+      .where(eq(workshops.id, id))
+      .run();
+    // A new time means the reminders are due again.
+    if (moved) db.update(signups).set({ reminder24hSentAt: null, reminder1hSentAt: null }).where(eq(signups.workshopId, id)).run();
+  });
   revalidateWorkshops();
-  return { ok: true, message: id == null ? "Workshop created." : "Workshop saved." };
+
+  const booked = seatHolders(id).length;
+  if (detailsChanged && booked > 0 && fields.notify === "on" && startsAt.getTime() > Date.now()) {
+    after(() => notifyWorkshopChange(id));
+    return { ok: true, message: `Saved. The ${booked} booked ${booked === 1 ? "attendee is" : "attendees are"} being emailed the new details and a calendar update.` };
+  }
+  return { ok: true, message: "Workshop saved." };
 }
 
 /** Emails one attendee their balance link now, ahead of the automatic email. */

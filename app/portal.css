@@ -2366,3 +2366,11 @@ fieldset.pt-field {
 .cal-item.is-busy {
   opacity: 0.65;
 }
+
+.pt-booking-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 6px 0 10px;
+}

@@ -6,6 +6,7 @@ import { getBookingSettings } from "@/lib/booking";
 import { getDb } from "@/lib/db";
 import { bookingSettings, clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
 import { buildFeed } from "@/lib/ics";
+import { workshopJoinUrl } from "@/lib/workshop-invite";
 import { seatsTaken } from "@/lib/workshops";
 
 // Monika's private subscription feed: every appointment and workshop date, so they
@@ -81,11 +82,12 @@ export async function buildCalendarFeed(now = new Date()) {
         const taken = await seatsTaken(w.id);
         return {
           uid: `workshop-${w.id}@coachskill.co.uk`,
-          sequence: 0,
+          sequence: w.icsSequence,
           start: w.startsAt!,
           durationMinutes: w.durationMinutes,
           title: w.name,
           description: `${taken}${w.capacity != null ? ` of ${w.capacity}` : ""} places booked\nCoach Skill: ${await appUrl(`/admin/signups?workshop=${w.id}`)}`,
+          url: workshopJoinUrl(w),
           location: w.location,
           cancelled: false,
         };

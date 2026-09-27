@@ -287,11 +287,25 @@ export function emailBookingLink(input: { to: string; name: string; typeName: st
 
 // — Workshop payments —
 
-type WorkshopInfo = { workshopName: string; startsAt: Date | null; location: string | null };
+type WorkshopInfo = {
+  workshopName: string;
+  startsAt: Date | null;
+  location: string | null;
+  /** The online joining link, when the workshop is online and has one. */
+  meetingUrl?: string | null;
+  /** Calendar invite for the workshop. */
+  attachments?: EmailAttachment[];
+};
 
 function workshopLine(w: WorkshopInfo) {
   const when = w.startsAt ? `${formatDateTime(w.startsAt)} (UK time)` : "Date to be confirmed — I'll email you as soon as it's set";
   return `${w.workshopName}: ${when}${w.location ? `, ${w.location}` : ""}.`;
+}
+
+function workshopJoinLines(w: WorkshopInfo) {
+  if (!w.meetingUrl) return [];
+  const note = joinNote(w.meetingUrl, "client");
+  return [`Join online here: ${w.meetingUrl}`, ...(note ? [note] : [])];
 }
 
 export function emailDepositConfirmed(
@@ -304,6 +318,7 @@ export function emailDepositConfirmed(
     paragraphs: [
       "I've received your deposit and your place on the workshop is reserved.",
       workshopLine(input),
+      ...workshopJoinLines(input),
       `The remaining ${formatPence(input.balancePence)} is due a week before the workshop. I'll email you a secure payment link then — there's nothing to do until it arrives.`,
       ...(input.account
         ? [
@@ -316,9 +331,14 @@ export function emailDepositConfirmed(
     button: input.account
       ? { label: input.account.isNew ? "Set up your account" : "Open your client area", url: input.account.url }
       : undefined,
-    footnote: input.account?.isNew
-      ? "The set-up link works once and expires in 7 days. Your payment receipt comes separately from Stripe."
-      : "Your payment receipt comes separately from Stripe.",
+    footnote: [
+      input.account?.isNew ? "The set-up link works once and expires in 7 days." : "",
+      input.attachments?.length ? "The attached invite adds the workshop to your calendar." : "",
+      "Your payment receipt comes separately from Stripe.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    attachments: input.attachments,
   });
 }
 
@@ -367,7 +387,36 @@ export function emailBalancePaid(input: WorkshopInfo & { to: string; name: strin
     to: input.to,
     subject: `You're all set: ${input.workshopName}`,
     heading: `You're all set, ${firstName(input.name)}`,
-    paragraphs: ["Thanks — your workshop is fully paid.", workshopLine(input), "I'm looking forward to seeing you there."],
+    paragraphs: ["Thanks — your workshop is fully paid.", workshopLine(input), ...workshopJoinLines(input), "I'm looking forward to seeing you there."],
+    footnote: input.attachments?.length ? "The attached invite adds the workshop to your calendar." : undefined,
+    attachments: input.attachments,
+  });
+}
+
+/** The date, time or joining details of a booked workshop changed. */
+export function emailWorkshopUpdated(input: WorkshopInfo & { to: string; name: string; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Updated details: ${input.workshopName}`,
+    heading: `Hi ${firstName(input.name)}, the workshop details have changed`,
+    paragraphs: ["Here are the latest details for your workshop:", workshopLine(input), ...workshopJoinLines(input)],
+    button: { label: "View in your client area", url: input.url },
+    footnote: input.attachments?.length
+      ? "The attached invite updates the event in your calendar. If the new time doesn't work for you, just reply to this email."
+      : "If the new time doesn't work for you, just reply to this email.",
+    attachments: input.attachments,
+  });
+}
+
+export function emailWorkshopReminder(input: WorkshopInfo & { to: string; name: string; url: string; when: "tomorrow" | "soon" }) {
+  return sendEmail({
+    to: input.to,
+    subject: input.when === "soon" ? `Starting soon: ${input.workshopName}` : `Reminder: ${input.workshopName} tomorrow`,
+    heading:
+      input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
+    paragraphs: [workshopLine(input), ...(input.meetingUrl && joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : [])],
+    button: input.meetingUrl ? { label: "Join the workshop", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
+    footnote: "If something's come up, just reply to this email.",
   });
 }
 

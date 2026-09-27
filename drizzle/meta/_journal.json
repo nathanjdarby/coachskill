@@ -85,6 +85,13 @@
       "when": 1790538797760,
       "tag": "0011_secret_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790539565370,
+      "tag": "0012_old_chamber",
+      "breakpoints": true
     }
   ]
 }

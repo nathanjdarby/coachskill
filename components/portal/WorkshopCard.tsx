@@ -11,6 +11,8 @@ export type PortalBooking = {
   balancePaidAt: Date | null;
   /** Link to pay the balance, when there's one to pay. */
   payUrl: string | null;
+  /** Online joining link, for upcoming online workshops. */
+  joinUrl: string | null;
   past: boolean;
 };
 
@@ -30,6 +32,18 @@ export function WorkshopCard({ bookings }: { bookings: PortalBooking[] }) {
               {b.startsAt ? `${formatDateTime(b.startsAt)} (UK time)` : "Date to be confirmed"}
               {b.location ? ` · ${b.location}` : ""}
             </p>
+            {!b.past && b.startsAt && (
+              <div className="pt-booking-links">
+                {b.joinUrl && (
+                  <a href={b.joinUrl} className="pt-btn pt-btn-secondary" target="_blank" rel="noreferrer">
+                    Join online
+                  </a>
+                )}
+                <a href={`/portal/workshops/${b.id}/ics`} className="pt-link pt-small">
+                  Add to calendar
+                </a>
+              </div>
+            )}
             {b.past ? (
               <span className="pt-badge">Attended</span>
             ) : b.balancePaidAt ? (

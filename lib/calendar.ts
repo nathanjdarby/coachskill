@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
 import { externalBusyBetween } from "@/lib/calendar-sync";
 import { londonDate } from "@/lib/time";
+import { workshopJoinUrl } from "@/lib/workshop-invite";
 import { seatsTaken } from "@/lib/workshops";
 
 export type AgendaItem = {
@@ -65,7 +66,7 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
           title: w.name,
           who: `${taken}${w.capacity != null ? ` / ${w.capacity}` : ""} booked${w.published ? "" : " · hidden"}`,
           colour: WORKSHOP_COLOUR,
-          joinUrl: null,
+          joinUrl: workshopJoinUrl(w),
           href: `/admin/signups?workshop=${w.id}`,
         };
       }),

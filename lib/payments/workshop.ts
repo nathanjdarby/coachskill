@@ -10,11 +10,10 @@ import { emailAdminPayment, emailBalancePaid, emailDepositConfirmed } from "@/li
 import { formatPence } from "@/lib/money";
 import { adminEmails } from "@/lib/portal";
 import { getStripe, STANDARD_PAYMENTS } from "@/lib/stripe";
+import { workshopEmailInfo } from "@/lib/workshop-invite";
 import { balanceToken, seatsTaken } from "@/lib/workshops";
 
-function info(w: Workshop) {
-  return { workshopName: w.name, startsAt: w.startsAt, location: w.location };
-}
+const info = workshopEmailInfo;
 
 async function notifyAdmins(subject: string, lines: string[]) {
   const to = await adminEmails();
