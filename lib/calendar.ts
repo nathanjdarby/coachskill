@@ -2,11 +2,12 @@ import "server-only";
 import { and, asc, gte, isNotNull, isNull, lt, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
+import { externalBusyBetween } from "@/lib/calendar-sync";
 import { londonDate } from "@/lib/time";
 import { seatsTaken } from "@/lib/workshops";
 
 export type AgendaItem = {
-  kind: "appointment" | "workshop";
+  kind: "appointment" | "workshop" | "busy";
   id: number;
   start: Date;
   end: Date;
@@ -14,12 +15,14 @@ export type AgendaItem = {
   who: string;
   colour: string;
   joinUrl: string | null;
+  allDay?: boolean;
   /** Where the admin goes to manage it. */
   href: string;
 };
 
 const MINUTE = 60_000;
 const WORKSHOP_COLOUR = "#fbbf24";
+const BUSY_COLOUR = "#64748b";
 
 /** Everything booked between `from` and `to`: appointments and workshop dates, soonest first. */
 export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
@@ -68,6 +71,21 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
       }),
     )),
   ];
+  // Busy times from Monika's own calendars, so it's clear why those slots aren't offered.
+  for (const b of externalBusyBetween(from, to)) {
+    items.push({
+      kind: "busy",
+      id: b.id,
+      start: b.startsAt,
+      end: b.endsAt,
+      title: "Busy",
+      who: `From ${b.label}`,
+      colour: BUSY_COLOUR,
+      joinUrl: null,
+      allDay: b.allDay,
+      href: "/admin/scheduling/connections",
+    });
+  }
   return items.sort((x, y) => x.start.getTime() - y.start.getTime());
 }
 

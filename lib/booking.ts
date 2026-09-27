@@ -5,8 +5,10 @@ import {
   availabilityBlocks,
   availabilityRules,
   bookingSettings,
+  calendarSources,
   clientPackages,
   coachingSessions,
+  externalBusy,
   workshops,
   type BookingSettings,
 } from "@/lib/db/schema";
@@ -62,10 +64,18 @@ function busyPeriods(from: Date, to: Date, excludeSessionId?: number): Busy[] {
     .from(availabilityBlocks)
     .where(and(lt(availabilityBlocks.startsAt, to), gt(availabilityBlocks.endsAt, from)))
     .all();
+  // Monika's own calendars (see lib/calendar-sync.ts).
+  const external = db
+    .select({ startsAt: externalBusy.startsAt, endsAt: externalBusy.endsAt })
+    .from(externalBusy)
+    .innerJoin(calendarSources, eq(externalBusy.sourceId, calendarSources.id))
+    .where(and(eq(calendarSources.active, true), lt(externalBusy.startsAt, to), gt(externalBusy.endsAt, from)))
+    .all();
   return [
     ...sessions.map((s) => ({ start: s.startsAt.getTime(), end: s.startsAt.getTime() + s.durationMinutes * MINUTE, buffered: true })),
     ...runs.map((w) => ({ start: w.startsAt!.getTime(), end: w.startsAt!.getTime() + w.durationMinutes * MINUTE, buffered: true })),
     ...blocks.map((b) => ({ start: b.startsAt.getTime(), end: b.endsAt.getTime(), buffered: false })),
+    ...external.map((b) => ({ start: b.startsAt.getTime(), end: b.endsAt.getTime(), buffered: false })),
   ];
 }
 

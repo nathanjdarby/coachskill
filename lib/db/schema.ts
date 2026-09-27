@@ -3,6 +3,7 @@ import {
   text,
   integer,
   uniqueIndex,
+  index,
 } from "drizzle-orm/sqlite-core";
 
 /** One row per dated workshop run (the slug is per run). */
@@ -292,7 +293,40 @@ export const bookingSettings = sqliteTable("booking_settings", {
   slotStepMinutes: integer("slot_step_minutes").notNull().default(30),
   cancelCutoffHours: integer("cancel_cutoff_hours").notNull().default(24),
   defaultMeetingUrl: text("default_meeting_url"),
+  /** Secret in Monika's calendar feed URL (/api/calendar/<token>). Kept readable so the link can be copied again. */
+  feedToken: text("feed_token"),
 });
+
+/** Monika's own calendars (private iCal addresses); their busy times block booking slots. */
+export const calendarSources = sqliteTable("calendar_sources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  label: text("label").notNull(),
+  /** Secret address; never shown in full after it's saved. */
+  url: text("url").notNull(),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  /** Whether all-day events (holidays, days off) block the whole day. */
+  blockAllDay: integer("block_all_day", { mode: "boolean" }).notNull().default(true),
+  lastFetchedAt: integer("last_fetched_at", { mode: "timestamp_ms" }),
+  lastSuccessAt: integer("last_success_at", { mode: "timestamp_ms" }),
+  lastError: text("last_error"),
+  busyCount: integer("busy_count").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** Busy times read from a calendar source. Only times are kept, never event titles. */
+export const externalBusy = sqliteTable(
+  "external_busy",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    sourceId: integer("source_id")
+      .notNull()
+      .references(() => calendarSources.id),
+    startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
+    endsAt: integer("ends_at", { mode: "timestamp_ms" }).notNull(),
+    allDay: integer("all_day", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [index("external_busy_source_idx").on(t.sourceId), index("external_busy_starts_idx").on(t.startsAt)],
+);
 
 export const messages = sqliteTable("messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -351,5 +385,6 @@ export type EventType = typeof eventTypes.$inferSelect;
 /** Sessions, discovery calls and other bookings all live in coaching_sessions. */
 export type Appointment = CoachingSession;
 export type BookingLink = typeof bookingLinks.$inferSelect;
+export type CalendarSource = typeof calendarSources.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceShare = typeof resourceShares.$inferSelect;

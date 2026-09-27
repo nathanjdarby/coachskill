@@ -2297,3 +2297,72 @@ fieldset.pt-field {
     justify-content: flex-end;
   }
 }
+
+/* — Calendar sync (admin) — */
+
+.cs-sources {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cs-source {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.cs-source.is-off {
+  opacity: 0.7;
+}
+
+.cs-source p {
+  margin: 0;
+}
+
+.cs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cs-label {
+  font-weight: 600;
+}
+
+.cs-url {
+  word-break: break-all;
+}
+
+.cs-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cs-help {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.cs-help p {
+  margin: 0;
+}
+
+.cs-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.cal-item.is-busy {
+  opacity: 0.65;
+}

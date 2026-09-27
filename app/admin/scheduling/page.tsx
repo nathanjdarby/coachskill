@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listAvailabilityRules } from "@/lib/booking";
+import { listCalendarSources } from "@/lib/calendar-sync";
 import { requireAdmin } from "@/lib/dal";
 import { listEventTypes } from "@/lib/event-types";
 
@@ -7,6 +8,8 @@ export default async function SchedulingPage() {
   await requireAdmin();
   const rules = listAvailabilityRules();
   const types = listEventTypes({ activeOnly: true });
+  const sources = listCalendarSources().filter((s) => s.active);
+  const syncProblem = sources.some((s) => s.lastError);
   const links = [
     {
       href: "/admin/calendar",
@@ -22,6 +25,15 @@ export default async function SchedulingPage() {
       href: "/admin/scheduling/event-types",
       title: "Booking types",
       hint: `${types.length} active: ${types.map((t) => t.name).join(", ")}`,
+    },
+    {
+      href: "/admin/scheduling/connections",
+      title: "Calendar sync",
+      hint: syncProblem
+        ? "A calendar couldn't be read — check it"
+        : sources.length
+          ? `Busy times from ${sources.map((s) => s.label).join(", ")} · bookings feed for your calendar`
+          : "Block your own busy times and see bookings in your calendar",
     },
   ];
   return (

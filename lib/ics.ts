@@ -38,17 +38,26 @@ function fold(line: string) {
   return out.join("\r\n");
 }
 
-export function buildIcs(e: IcsEvent) {
+type VEvent = {
+  uid: string;
+  sequence: number;
+  start: Date;
+  durationMinutes: number;
+  title: string;
+  description?: string;
+  url?: string | null;
+  location?: string | null;
+  organizerEmail?: string;
+  cancelled?: boolean;
+};
+
+function veventLines(e: VEvent) {
   const end = new Date(e.start.getTime() + e.durationMinutes * 60_000);
   const description = [e.description, e.url ? `Join: ${e.url}` : ""].filter(Boolean).join("\n");
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Coach Skill//Sessions//EN",
-    "CALSCALE:GREGORIAN",
-    `METHOD:${e.method}`,
+  const location = e.url ?? e.location;
+  return [
     "BEGIN:VEVENT",
-    `UID:session-${e.sessionId}@coachskill.co.uk`,
+    `UID:${e.uid}`,
     `SEQUENCE:${e.sequence}`,
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(e.start)}`,
@@ -56,12 +65,50 @@ export function buildIcs(e: IcsEvent) {
     `SUMMARY:${escape(e.title)}`,
     description ? `DESCRIPTION:${escape(description)}` : "",
     e.url ? `URL:${e.url}` : "",
-    e.url ? `LOCATION:${escape(e.url)}` : "",
+    location ? `LOCATION:${escape(location)}` : "",
     e.organizerEmail ? `ORGANIZER;CN=Monika Kozlowska:mailto:${e.organizerEmail}` : "",
-    `STATUS:${e.method === "CANCEL" ? "CANCELLED" : "CONFIRMED"}`,
+    `STATUS:${e.cancelled ? "CANCELLED" : "CONFIRMED"}`,
     "END:VEVENT",
-    "END:VCALENDAR",
   ].filter(Boolean);
+}
+
+export function buildIcs(e: IcsEvent) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Coach Skill//Sessions//EN",
+    "CALSCALE:GREGORIAN",
+    `METHOD:${e.method}`,
+    ...veventLines({
+      uid: `session-${e.sessionId}@coachskill.co.uk`,
+      sequence: e.sequence,
+      start: e.start,
+      durationMinutes: e.durationMinutes,
+      title: e.title,
+      description: e.description,
+      url: e.url,
+      organizerEmail: e.organizerEmail,
+      cancelled: e.method === "CANCEL",
+    }),
+    "END:VCALENDAR",
+  ];
+  return lines.map(fold).join("\r\n") + "\r\n";
+}
+
+/** A subscribable calendar (no METHOD, so apps treat it as a published feed). */
+export function buildFeed(name: string, events: VEvent[]) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Coach Skill//Feed//EN",
+    "CALSCALE:GREGORIAN",
+    `X-WR-CALNAME:${escape(name)}`,
+    "X-WR-TIMEZONE:Europe/London",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT15M",
+    "X-PUBLISHED-TTL:PT15M",
+    ...events.flatMap(veventLines),
+    "END:VCALENDAR",
+  ];
   return lines.map(fold).join("\r\n") + "\r\n";
 }
 

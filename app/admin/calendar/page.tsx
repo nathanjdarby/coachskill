@@ -42,11 +42,17 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
               <h2 className="cal-day-title">{formatDay(items[0].start)}</h2>
               <ul className="cal-items">
                 {items.map((item) => (
-                  <li key={`${item.kind}-${item.id}`} className="cal-item">
+                  <li key={`${item.kind}-${item.id}`} className={`cal-item ${item.kind === "busy" ? "is-busy" : ""}`}>
                     <span className="cal-dot" style={{ background: item.colour }} aria-hidden />
                     <span className="cal-time">
-                      {formatTime(item.start)}
-                      <span className="pt-muted">–{formatTime(item.end)}</span>
+                      {item.allDay ? (
+                        "All day"
+                      ) : (
+                        <>
+                          {formatTime(item.start)}
+                          <span className="pt-muted">–{formatTime(item.end)}</span>
+                        </>
+                      )}
                     </span>
                     <Link href={item.href} className="cal-body">
                       <span className="cal-title">{item.title}</span>
