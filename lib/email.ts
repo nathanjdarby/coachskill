@@ -1,5 +1,5 @@
 import "server-only";
-import { joinNote } from "@/lib/meeting";
+import { joinNote, personalJoinUrl } from "@/lib/meeting";
 import { formatPence } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 
@@ -103,6 +103,10 @@ ${footnote}
 </td></tr></table></body></html>`;
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL?.trim().replace(/\/+$/, "") || "https://coachskill.co.uk";
+/** Added under join links: a quick camera and microphone check before the call. */
+const setupLine = `Want to check your camera and microphone first? ${SITE_URL}/check-setup`;
+
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
 export function emailPortalInvite(input: { to: string; name: string; url: string; role: "admin" | "client" }) {
@@ -192,10 +196,13 @@ function sessionLine(s: SessionEmail) {
   return `${s.title} — ${formatDateTime(s.startsAt)} (UK time), ${s.durationMinutes} minutes.`;
 }
 
+/** The recipient's own join link: their name filled in and the room titled. */
+const sessionJoinUrl = (s: SessionEmail) => personalJoinUrl(s.meetingUrl, { name: s.name, subject: s.title });
+
 function meetingLine(s: SessionEmail) {
   if (!s.meetingUrl) return [];
   const note = joinNote(s.meetingUrl, "client");
-  return [`Join here: ${s.meetingUrl}`, ...(note ? [note] : [])];
+  return [`Join here: ${sessionJoinUrl(s)}`, ...(note ? [note] : []), setupLine];
 }
 
 const CALENDAR_NOTE = "The attached invite adds it to your calendar.";
@@ -247,8 +254,12 @@ export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | 
     to: input.to,
     subject: input.when === "soon" ? `Starting soon: ${input.title}` : `Reminder: ${input.title} tomorrow`,
     heading: input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
-    paragraphs: [sessionLine(input), ...(joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : [])],
-    button: input.meetingUrl ? { label: "Join the session", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
+    paragraphs: [
+      sessionLine(input),
+      ...(joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : []),
+      ...(input.meetingUrl && input.when === "tomorrow" ? [setupLine] : []),
+    ],
+    button: input.meetingUrl ? { label: "Join the session", url: sessionJoinUrl(input)! } : { label: "View in your client area", url: input.url },
     footnote: input.guest
       ? `Need to change it? Use your booking page: ${input.url}`
       : "Need to change it? You can reschedule from your client area.",
@@ -270,6 +281,20 @@ export function emailAdminBooking(input: {
     paragraphs: input.lines,
     button: { label: input.buttonLabel ?? "Open client", url: input.url },
     attachments: input.attachments,
+  });
+}
+
+export function emailCallNow(input: { to: string; name: string; joinUrl: string; fromName: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `${firstName(input.fromName)} is ready to talk now`,
+    heading: `Hi ${firstName(input.name)}, I'm ready to talk now`,
+    paragraphs: [
+      "I've started a video call for us. Join whenever you're ready — it opens in your browser, no app or account needed.",
+      "If now isn't a good time, just reply and we'll find another.",
+    ],
+    button: { label: "Join the call", url: input.joinUrl },
+    footnote: setupLine,
   });
 }
 
@@ -323,10 +348,10 @@ function workshopLine(w: WorkshopInfo) {
   return `${w.workshopName}: ${when}${w.location ? `, ${w.location}` : ""}.`;
 }
 
-function workshopJoinLines(w: WorkshopInfo) {
+function workshopJoinLines(w: WorkshopInfo, name: string) {
   if (!w.meetingUrl) return [];
   const note = joinNote(w.meetingUrl, "client");
-  return [`Join online here: ${w.meetingUrl}`, ...(note ? [note] : [])];
+  return [`Join online here: ${personalJoinUrl(w.meetingUrl, { name, subject: w.workshopName })}`, ...(note ? [note] : []), setupLine];
 }
 
 export function emailDepositConfirmed(
@@ -339,7 +364,7 @@ export function emailDepositConfirmed(
     paragraphs: [
       "I've received your deposit and your place on the workshop is reserved.",
       workshopLine(input),
-      ...workshopJoinLines(input),
+      ...workshopJoinLines(input, input.name),
       `The remaining ${formatPence(input.balancePence)} is due a week before the workshop. I'll email you a secure payment link then — there's nothing to do until it arrives.`,
       ...(input.account
         ? [
@@ -408,7 +433,7 @@ export function emailBalancePaid(input: WorkshopInfo & { to: string; name: strin
     to: input.to,
     subject: `You're all set: ${input.workshopName}`,
     heading: `You're all set, ${firstName(input.name)}`,
-    paragraphs: ["Thanks — your workshop is fully paid.", workshopLine(input), ...workshopJoinLines(input), "I'm looking forward to seeing you there."],
+    paragraphs: ["Thanks — your workshop is fully paid.", workshopLine(input), ...workshopJoinLines(input, input.name), "I'm looking forward to seeing you there."],
     footnote: input.attachments?.length ? "The attached invite adds the workshop to your calendar." : undefined,
     attachments: input.attachments,
   });
@@ -420,7 +445,7 @@ export function emailWorkshopUpdated(input: WorkshopInfo & { to: string; name: s
     to: input.to,
     subject: `Updated details: ${input.workshopName}`,
     heading: `Hi ${firstName(input.name)}, the workshop details have changed`,
-    paragraphs: ["Here are the latest details for your workshop:", workshopLine(input), ...workshopJoinLines(input)],
+    paragraphs: ["Here are the latest details for your workshop:", workshopLine(input), ...workshopJoinLines(input, input.name)],
     button: { label: "View in your client area", url: input.url },
     footnote: input.attachments?.length
       ? "The attached invite updates the event in your calendar. If the new time doesn't work for you, just reply to this email."
@@ -435,8 +460,14 @@ export function emailWorkshopReminder(input: WorkshopInfo & { to: string; name: 
     subject: input.when === "soon" ? `Starting soon: ${input.workshopName}` : `Reminder: ${input.workshopName} tomorrow`,
     heading:
       input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
-    paragraphs: [workshopLine(input), ...(input.meetingUrl && joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : [])],
-    button: input.meetingUrl ? { label: "Join the workshop", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
+    paragraphs: [
+      workshopLine(input),
+      ...(input.meetingUrl && joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : []),
+      ...(input.meetingUrl && input.when === "tomorrow" ? [setupLine] : []),
+    ],
+    button: input.meetingUrl
+      ? { label: "Join the workshop", url: personalJoinUrl(input.meetingUrl, { name: input.name, subject: input.workshopName })! }
+      : { label: "View in your client area", url: input.url },
     footnote: "If something's come up, just reply to this email.",
   });
 }

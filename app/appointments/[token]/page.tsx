@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cancelByToken, rescheduleByToken } from "@/app/actions/appointments";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { JoinButton } from "@/components/JoinButton";
 import { SessionActions } from "@/components/portal/SessionActions";
 import { appointmentByToken, isUpcoming } from "@/lib/appointments";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
+import { personalJoinUrl } from "@/lib/meeting";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = {
@@ -67,11 +70,21 @@ export default async function AppointmentPage({
       {upcoming && (
         <div className="pt-appt-actions">
           {a.meetingUrl && (
-            <a href={a.meetingUrl} className="pt-btn pt-btn-primary" target="_blank" rel="noreferrer">
-              Join the call
-            </a>
+            <JoinButton
+              url={personalJoinUrl(a.meetingUrl, { name: a.inviteeName, subject: a.title })!}
+              startsAt={a.startsAt}
+              durationMinutes={a.durationMinutes}
+              label="Join the call"
+            />
           )}
-          {a.meetingUrl && <p className="pt-muted pt-small">If you&apos;re early, you&apos;ll wait in a lobby until Monika lets you in.</p>}
+          {a.meetingUrl && (
+            <p className="pt-muted pt-small">
+              If you&apos;re early, you&apos;ll wait in a lobby until Monika lets you in.{" "}
+              <Link href="/check-setup" className="pt-link">
+                Check your camera and mic
+              </Link>
+            </p>
+          )}
           <SessionActions
             sessionId={a.id}
             canChange={canChange}

@@ -17,10 +17,11 @@ import {
 import { canClientChange, getBookingSettings, isSlotAvailable } from "@/lib/booking";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
-import { bookingLinks, clients, coachingSessions, discoveryCalls } from "@/lib/db/schema";
-import { emailBookingLink } from "@/lib/email";
-import { DISCOVERY_SLUG, durationFor, getEventType, getEventTypeBySlug } from "@/lib/event-types";
-import { notifyAppointmentChange } from "@/lib/session-notify";
+import { bookingLinks, clients, coachingSessions, discoveryCalls, messages } from "@/lib/db/schema";
+import { emailBookingLink, emailCallNow } from "@/lib/email";
+import { DISCOVERY_SLUG, QUICK_CALL_SLUG, durationFor, getEventType, getEventTypeBySlug } from "@/lib/event-types";
+import { personalJoinUrl } from "@/lib/meeting";
+import { appointmentRecipient, notifyAppointmentChange } from "@/lib/session-notify";
 import { newLinkSecret } from "@/lib/signed-links";
 import { clientIp, rateLimit } from "@/lib/spam";
 import { parseLondonDateTime } from "@/lib/time";
@@ -189,6 +190,68 @@ function cancel(id: number, by: "admin" | "invitee") {
     .set({ cancelledAt: new Date(), cancelledBy: by, icsSequence: sql`${coachingSessions.icsSequence} + 1`, updatedAt: new Date() })
     .where(and(eq(coachingSessions.id, id), isNull(coachingSessions.cancelledAt)))
     .run();
+}
+
+/**
+ * "Start a call now": a Quick call starting straight away. The client or prospect is
+ * emailed the link (and, for clients, it's posted in Messages); Monika gets her own link back.
+ */
+export async function startCallNow(target: { clientId: number } | { discoveryCallId: number }): Promise<FormState> {
+  const admin = await requireAdmin();
+  const db = getDb();
+  const type = getEventTypeBySlug(QUICK_CALL_SLUG);
+  if (!type) return { ok: false, message: "The Quick call booking type is missing." };
+
+  let person: { name: string; email: string; clientId: number | null; discoveryCallId: number | null };
+  if ("clientId" in target) {
+    const client = db.select().from(clients).where(eq(clients.id, target.clientId)).get();
+    if (!client) return { ok: false, message: "Client not found." };
+    person = { name: client.fullName, email: client.email, clientId: client.id, discoveryCallId: null };
+  } else {
+    const found = loadRequest(target.discoveryCallId);
+    if (!found) return { ok: false, message: "That discovery request no longer exists." };
+    person = { name: found.call.fullName, email: found.call.email, clientId: found.clientId, discoveryCallId: found.call.id };
+  }
+
+  const startsAt = new Date(Math.floor(Date.now() / 60_000) * 60_000);
+  const appointment = insertInviteeAppointment({
+    type,
+    startsAt,
+    durationMinutes: durationFor(type),
+    inviteeName: person.name,
+    inviteeEmail: person.email,
+    discoveryCallId: person.discoveryCallId,
+    clientId: person.clientId,
+    bookedBy: "admin",
+  });
+  const recipient = await appointmentRecipient(appointment);
+  const guestJoin = personalJoinUrl(appointment.meetingUrl, { name: recipient?.name ?? person.name, subject: type.name })!;
+  if (person.clientId) {
+    db.insert(messages)
+      .values({
+        clientId: person.clientId,
+        senderId: admin.id,
+        // The plain room link reads better in a message than the personalised one.
+        body: `I've started a video call — join me here whenever you're ready: ${appointment.meetingUrl}`,
+        createdAt: new Date(),
+      })
+      .run();
+  }
+  const sent = recipient
+    ? await emailCallNow({ to: recipient.to, name: recipient.name, joinUrl: guestJoin, fromName: admin.name })
+    : { ok: false as const };
+
+  revalidateScheduling(person.clientId);
+  if (person.clientId) revalidatePath("/portal/messages");
+  const first = person.name.split(/\s+/)[0];
+  return {
+    ok: true,
+    message: sent.ok
+      ? `Call started — ${first} has been emailed the link${person.clientId ? " and it's in their messages" : ""}.`
+      : `Call started, but the email couldn't be sent${person.clientId ? " (the link is in their messages)" : ""}. Send them this link:`,
+    link: personalJoinUrl(appointment.meetingUrl, { name: admin.name, subject: type.name })!,
+    fields: { guestLink: guestJoin },
+  };
 }
 
 // — Public (people with a link) —

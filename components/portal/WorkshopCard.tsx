@@ -1,3 +1,4 @@
+import { JoinButton } from "@/components/JoinButton";
 import { formatPence } from "@/lib/money";
 import { formatDate, formatDateTime } from "@/lib/time";
 
@@ -13,6 +14,7 @@ export type PortalBooking = {
   payUrl: string | null;
   /** Online joining link, for upcoming online workshops. */
   joinUrl: string | null;
+  durationMinutes: number;
   past: boolean;
 };
 
@@ -35,9 +37,13 @@ export function WorkshopCard({ bookings }: { bookings: PortalBooking[] }) {
             {!b.past && b.startsAt && (
               <div className="pt-booking-links">
                 {b.joinUrl && (
-                  <a href={b.joinUrl} className="pt-btn pt-btn-secondary" target="_blank" rel="noreferrer">
-                    Join online
-                  </a>
+                  <JoinButton
+                    url={b.joinUrl}
+                    startsAt={b.startsAt}
+                    durationMinutes={b.durationMinutes}
+                    label="Join online"
+                    className="pt-btn pt-btn-secondary"
+                  />
                 )}
                 <a href={`/portal/workshops/${b.id}/ics`} className="pt-link pt-small">
                   Add to calendar

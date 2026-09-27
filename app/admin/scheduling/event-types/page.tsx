@@ -3,7 +3,7 @@ import { deleteEventType } from "@/app/actions/scheduling";
 import { ConfirmSubmit } from "@/components/admin/ClientForms";
 import { EventTypeForm, NEW_EVENT_TYPE } from "@/components/admin/EventTypeForms";
 import { requireAdmin } from "@/lib/dal";
-import { COACHING_SLUG, DISCOVERY_SLUG, listEventTypes } from "@/lib/event-types";
+import { BUILT_IN_SLUGS, COACHING_SLUG, listEventTypes } from "@/lib/event-types";
 
 const AUDIENCE_LABEL = {
   clients_with_credits: "Clients book with package sessions",
@@ -38,7 +38,7 @@ export default async function EventTypesPage() {
       </details>
 
       {types.map((t) => {
-        const builtIn = t.slug === COACHING_SLUG || t.slug === DISCOVERY_SLUG;
+        const builtIn = BUILT_IN_SLUGS.includes(t.slug);
         return (
           <section key={t.id} className="pt-card">
             <div className="pt-card-head">

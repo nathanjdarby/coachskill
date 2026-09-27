@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { bookSession } from "@/app/actions/booking";
 import { BookingPicker } from "@/components/portal/BookingPicker";
+import { JoinButton } from "@/components/JoinButton";
 import { PackagesCard } from "@/components/portal/PackagesCard";
 import { SessionActions } from "@/components/portal/SessionActions";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
 import { requireClient } from "@/lib/dal";
 import { COACHING_SLUG, durationFor, getEventTypeBySlug } from "@/lib/event-types";
+import { personalJoinUrl } from "@/lib/meeting";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
@@ -36,7 +39,12 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
     <div className="pt-page pt-narrow">
       <div className="pt-page-head">
         <h1>Sessions</h1>
-        <p className="pt-muted">All times are UK time.</p>
+        <p className="pt-muted">
+          All times are UK time.{" "}
+          <Link href="/check-setup" className="pt-link">
+            Check your camera &amp; mic
+          </Link>
+        </p>
       </div>
 
       {purchase === "success" && (
@@ -77,9 +85,12 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
                   </p>
                 </div>
                 {s.meetingUrl && (
-                  <a href={s.meetingUrl} className="pt-btn pt-btn-secondary" target="_blank" rel="noreferrer">
-                    Join
-                  </a>
+                  <JoinButton
+                    url={personalJoinUrl(s.meetingUrl, { name: user.name, subject: s.title })!}
+                    startsAt={s.startsAt}
+                    durationMinutes={s.durationMinutes}
+                    className="pt-btn pt-btn-secondary"
+                  />
                 )}
                 <SessionActions
                   sessionId={s.id}

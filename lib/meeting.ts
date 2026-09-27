@@ -16,6 +16,23 @@ export function isJitsiUrl(url: string | null | undefined) {
   return Boolean(url?.startsWith(`${JITSI_BASE}/`));
 }
 
+/**
+ * A meet.jit.si link that opens with the person's name filled in, the room titled and the
+ * camera/mic check screen first. Settings go in the URL hash (never sent to a server);
+ * Jitsi only honours allow-listed keys. Other links are returned unchanged.
+ */
+export function personalJoinUrl(url: string | null | undefined, opts: { name?: string | null; subject?: string | null } = {}) {
+  if (!url || !isJitsiUrl(url)) return url ?? null;
+  const settings = [
+    opts.name?.trim() ? `userInfo.displayName=${encodeURIComponent(JSON.stringify(opts.name.trim()))}` : "",
+    opts.subject?.trim() ? `config.subject=${encodeURIComponent(JSON.stringify(opts.subject.trim()))}` : "",
+    "config.prejoinConfig.enabled=true",
+    // Phones stay in the browser instead of being sent to the app store.
+    "config.disableDeepLinking=true",
+  ].filter(Boolean);
+  return `${url.split("#")[0]}#${settings.join("&")}`;
+}
+
 type LocationSource = Pick<EventType, "locationMode" | "customUrl">;
 
 /** The link for a new appointment: an explicit override, else what the event type says. */

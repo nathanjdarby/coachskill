@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { cancelAppointmentAsAdmin, revokeBookingLink, scheduleDiscoveryCall, sendBookingLink } from "@/app/actions/appointments";
 import type { FormState } from "@/app/actions/types";
+import { CallNowButton } from "@/components/admin/CallNowButton";
 import type { SlotDay } from "@/components/portal/BookingPicker";
 import { CopyLink, FieldError, FormMessage, SubmitButton } from "@/components/portal/FormBits";
 import { formatDateTime, formatDay, formatTime } from "@/lib/time";
@@ -110,6 +111,8 @@ export function DiscoveryScheduling({
         </div>
       )}
       <FormMessage state={message} />
+
+      <CallNowButton target={{ discoveryCallId }} firstName={firstName} />
 
       <div className="pt-btn-row">
         <button

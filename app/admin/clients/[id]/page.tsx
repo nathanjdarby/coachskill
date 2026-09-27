@@ -17,8 +17,10 @@ import { AccessBadge, KindBadge, StatusBadge } from "@/components/portal/AccessB
 import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
 import { requireAdmin } from "@/lib/dal";
+import { CallNowButton } from "@/components/admin/CallNowButton";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { workshopBookingsFor } from "@/lib/attendees";
+import { personalJoinUrl } from "@/lib/meeting";
 import { formatPence } from "@/lib/money";
 import { COACHING_SLUG, listEventTypes } from "@/lib/event-types";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
@@ -81,6 +83,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
               label={access === "invited" ? "Resend invite" : "Invite to client area"}
             />
           )}
+          <CallNowButton target={{ clientId: client.id }} firstName={client.fullName.split(/\s+/)[0]} />
         </div>
       </div>
 
@@ -137,13 +140,13 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             {upcoming.length > 0 && (
               <>
                 <h3 className="pt-subhead">Upcoming</h3>
-                <SessionList sessions={upcoming} clientId={client.id} packageNames={packageNames} />
+                <SessionList sessions={upcoming} clientId={client.id} packageNames={packageNames} hostName={admin.name} />
               </>
             )}
             {past.length > 0 && (
               <>
                 <h3 className="pt-subhead">Past</h3>
-                <SessionList sessions={past} clientId={client.id} packageNames={packageNames} />
+                <SessionList sessions={past} clientId={client.id} packageNames={packageNames} hostName={admin.name} />
               </>
             )}
             <details className="pt-inline-details">
@@ -254,6 +257,7 @@ function SessionList({
   sessions,
   clientId,
   packageNames,
+  hostName,
 }: {
   sessions: {
     id: number;
@@ -268,6 +272,8 @@ function SessionList({
   }[];
   clientId: number;
   packageNames: Map<number, string>;
+  /** The signed-in admin, so their join links open with their name. */
+  hostName: string;
 }) {
   return (
     <ul className="pt-sessions">
@@ -283,7 +289,7 @@ function SessionList({
               {s.meetingUrl && (
                 <>
                   {" · "}
-                  <a href={s.meetingUrl} className="pt-link" target="_blank" rel="noreferrer">
+                  <a href={personalJoinUrl(s.meetingUrl, { name: hostName, subject: s.title })!} className="pt-link" target="_blank" rel="noreferrer">
                     Meeting link
                   </a>
                 </>

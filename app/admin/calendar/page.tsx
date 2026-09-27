@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/dal";
 import { agendaWindow, groupByDay, listAgenda } from "@/lib/calendar";
+import { personalJoinUrl } from "@/lib/meeting";
 import { formatDay, formatTime } from "@/lib/time";
 
 const RANGES = [14, 60] as const;
 
 export default async function AdminCalendarPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const days = (await searchParams).days === "60" ? 60 : 14;
   const { from, to } = agendaWindow(days);
   const agenda = groupByDay(await listAgenda(from, to));
@@ -59,7 +60,7 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
                       <span className="pt-muted pt-small">{item.who}</span>
                     </Link>
                     {item.joinUrl && (
-                      <a href={item.joinUrl} className="pt-btn pt-btn-secondary cal-join" target="_blank" rel="noopener noreferrer">
+                      <a href={personalJoinUrl(item.joinUrl, { name: admin.name, subject: item.title })!} className="pt-btn pt-btn-secondary cal-join" target="_blank" rel="noopener noreferrer">
                         Join
                       </a>
                     )}

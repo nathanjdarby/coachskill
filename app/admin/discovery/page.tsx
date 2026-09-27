@@ -3,6 +3,7 @@ import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/DiscoveryScheduling";
 import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
 import { availableSlots, groupSlotsByDay } from "@/lib/booking";
+import { personalJoinUrl } from "@/lib/meeting";
 import { requireAdmin } from "@/lib/dal";
 import { durationFor, listEventTypes } from "@/lib/event-types";
 import { enquirySubtitle } from "@/lib/discovery";
@@ -10,7 +11,7 @@ import { listDiscoveryCallsWithClients } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
 export default async function AdminDiscoveryPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const rows = await listDiscoveryCallsWithClients();
   const scheduling = await schedulingForDiscovery(rows.map((r) => r.call.id));
   // Types Monika can send to prospects, with her free times for each.
@@ -75,7 +76,7 @@ export default async function AdminDiscoveryPage() {
                     title: a.title,
                     startsAt: a.startsAt,
                     durationMinutes: a.durationMinutes,
-                    meetingUrl: a.meetingUrl,
+                    meetingUrl: personalJoinUrl(a.meetingUrl, { name: admin.name, subject: a.title }),
                     cancelledAt: a.cancelledAt,
                     upcoming: isUpcoming(a),
                     colour: a.typeColour,

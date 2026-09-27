@@ -5,12 +5,12 @@ import { eq, sql } from "drizzle-orm";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { bookingLinks, coachingSessions, eventTypes } from "@/lib/db/schema";
-import { COACHING_SLUG, DISCOVERY_SLUG } from "@/lib/event-types";
+import { BUILT_IN_SLUGS, COACHING_SLUG } from "@/lib/event-types";
 import type { FormState } from "./types";
 
 const AUDIENCES = ["clients_with_credits", "invite_only", "admin_only"] as const;
 const LOCATIONS = ["jitsi", "custom", "in_person"] as const;
-const BUILT_IN = [COACHING_SLUG, DISCOVERY_SLUG];
+const BUILT_IN = BUILT_IN_SLUGS;
 
 function text(formData: FormData, key: string, max = 200) {
   return String(formData.get(key) ?? "").trim().slice(0, max);

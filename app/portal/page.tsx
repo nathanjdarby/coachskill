@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PackagesCard } from "@/components/portal/PackagesCard";
+import { JoinButton } from "@/components/JoinButton";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { WorkshopCard, type PortalBooking } from "@/components/portal/WorkshopCard";
 import { workshopBookingsFor } from "@/lib/attendees";
+import { personalJoinUrl } from "@/lib/meeting";
 import { workshopJoinUrl } from "@/lib/workshop-invite";
 import { requireClient } from "@/lib/dal";
 import { balancePayUrl } from "@/lib/payments/workshop";
@@ -38,7 +40,8 @@ export default async function PortalHomePage() {
         amountPaidPence: signup.amountPaidPence,
         balancePaidAt: signup.balancePaidAt,
         payUrl: !past && !signup.balancePaidAt && workshop.balancePence > 0 ? await balancePayUrl(signup.id) : null,
-        joinUrl: past ? null : workshopJoinUrl(workshop),
+        joinUrl: past ? null : personalJoinUrl(workshopJoinUrl(workshop), { name: user.name, subject: workshop.name }),
+        durationMinutes: workshop.durationMinutes,
         past,
       };
     }),
@@ -71,9 +74,14 @@ export default async function PortalHomePage() {
                   {formatDateTime(next.startsAt)} (UK time) · {next.durationMinutes} min
                 </p>
                 {next.meetingUrl && (
-                  <a href={next.meetingUrl} className="pt-btn pt-btn-primary pt-mt" target="_blank" rel="noreferrer">
-                    Join meeting
-                  </a>
+                  <div className="pt-mt">
+                    <JoinButton
+                      url={personalJoinUrl(next.meetingUrl, { name: user.name, subject: next.title })!}
+                      startsAt={next.startsAt}
+                      durationMinutes={next.durationMinutes}
+                      label="Join meeting"
+                    />
+                  </div>
                 )}
               </>
             ) : (
