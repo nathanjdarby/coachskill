@@ -11,9 +11,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import {
+  activeQuestions,
   firstNameOf,
   formatAnswer,
   isAnswered,
+  multiValues,
   questionTitle,
   questions,
   sanitizeAnswers,
@@ -27,8 +29,13 @@ type SaveState = "idle" | "saved" | "error";
 type Saved = { answers: Answers; step: string };
 
 const KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const STORAGE_KEY = "coachskill.discovery.v1";
-const STEPS = ["intro", ...questions.map((q) => q.id), "review"];
+const STORAGE_KEY = "coachskill.enquiry.v2";
+const ALL_STEPS = ["intro", ...questions.map((q) => q.id), "review"];
+
+/** The screens for these answers (questions like team size drop out for "Myself"). */
+function stepsFor(answers: Answers) {
+  return ["intro", ...activeQuestions(answers).map((q) => q.id), "review"];
+}
 
 // Progress lives in this browser only — visitors aren't signed in.
 function readSavedRaw(): string | null {
@@ -50,11 +57,11 @@ function parseSaved(raw: string | null): Saved | null {
     const parsed = JSON.parse(raw) as { answers?: unknown; step?: unknown };
     const answers = sanitizeAnswers(parsed.answers);
     const step =
-      typeof parsed.step === "string" && STEPS.includes(parsed.step)
+      typeof parsed.step === "string" && ALL_STEPS.includes(parsed.step)
         ? parsed.step
         : "intro";
     if (Object.keys(answers).length === 0) return null;
-    return { answers, step: step === "intro" ? STEPS[1] : step };
+    return { answers, step: step === "intro" ? ALL_STEPS[1] : step };
   } catch {
     return null;
   }
@@ -116,7 +123,8 @@ export function DiscoveryFlow() {
     };
   }, []);
 
-  const index = Math.max(0, STEPS.indexOf(step));
+  const steps = stepsFor(answers);
+  const index = Math.max(0, steps.indexOf(step));
   const question = questions.find((q) => q.id === step) ?? null;
   const firstName = firstNameOf(answers);
   const resuming = !started && saved !== null;
@@ -149,14 +157,17 @@ export function DiscoveryFlow() {
         goTo("review", 1, latestAnswers);
         return;
       }
-      goTo(STEPS[Math.min(index + 1, STEPS.length - 1)], 1, latestAnswers);
+      // Work out the next screen from the latest answers, which may skip a question.
+      const latestSteps = stepsFor(latestAnswers);
+      const at = latestSteps.indexOf(step);
+      goTo(latestSteps[Math.min(at + 1, latestSteps.length - 1)], 1, latestAnswers);
     },
-    [answers, question, returnToReview, step, index, goTo],
+    [answers, question, returnToReview, step, goTo],
   );
 
   const back = useCallback(() => {
-    if (index > 0) goTo(STEPS[index - 1], -1);
-  }, [index, goTo]);
+    if (index > 0) goTo(steps[index - 1], -1);
+  }, [index, steps, goTo]);
 
   const update = useCallback((patch: Answers) => {
     setFieldError(null);
@@ -183,7 +194,7 @@ export function DiscoveryFlow() {
     writeSaved(null);
     setStarted(true);
     setAnswers({});
-    goTo(STEPS[1], 1, {});
+    goTo(ALL_STEPS[1], 1, {});
   }
 
   const canContinue = !question || question.optional || isAnswered(question, answers);
@@ -260,7 +271,7 @@ export function DiscoveryFlow() {
         else if (canContinue) next();
         return;
       }
-      if (typing || e.metaKey || e.ctrlKey || question?.type !== "single") return;
+      if (typing || e.metaKey || e.ctrlKey || (question?.type !== "single" && question?.type !== "multi")) return;
       if (/^[a-z]$/i.test(e.key)) {
         const value = question.options[KEYS.indexOf(e.key.toUpperCase())]?.value;
         if (!value) return;
@@ -321,11 +332,11 @@ export function DiscoveryFlow() {
         {step !== "intro" && (
           <div className="onb-progress">
             {sections.map((s, i) => {
-              const qs = questions.filter((q) => q.section === s.id);
+              const qs = activeQuestions(answers).filter((q) => q.section === s.id);
               const done =
                 step === "review" || step === "done"
                   ? qs.length
-                  : qs.filter((q) => STEPS.indexOf(q.id) < index).length;
+                  : qs.filter((q) => steps.indexOf(q.id) < index).length;
               const pct = (done / qs.length) * 100;
               return (
                 <div key={s.id}>
@@ -419,7 +430,7 @@ function Intro({
         priority
       />
       <p className="eyebrow onb-intro-eyebrow">
-        {resuming ? "Welcome back" : "Discovery call"}
+        {resuming ? "Welcome back" : "Get in touch"}
       </p>
       <h1 className="onb-intro-title">
         {resuming ? (
@@ -435,17 +446,17 @@ function Intro({
           </>
         ) : (
           <>
-            Let&apos;s make our call <span>count.</span>
+            Tell us what you&apos;re <span>looking for.</span>
           </>
         )}
       </h1>
       <p className="onb-intro-lead">
-        A few short questions so I can understand your goals and how best to
-        support you during our call.
+        A few quick questions about you, your team and what you need, so we can
+        come back to you with the right support.
       </p>
 
       <ul className="onb-chips">
-        {["About 3 minutes", "Saves as you go", "Review before sending"].map((t) => (
+        {["About 2 minutes", "Saves as you go", "Review before sending"].map((t) => (
           <li key={t}>{t}</li>
         ))}
       </ul>
@@ -503,7 +514,7 @@ function QuestionScreen({
 
   useEffect(() => {
     // Text questions focus their field; choice questions focus the heading for screen readers.
-    if (q.type === "single") headingRef.current?.focus({ preventScroll: true });
+    if (q.type === "single" || q.type === "multi") headingRef.current?.focus({ preventScroll: true });
   }, [q.id, q.type]);
 
   return (
@@ -584,6 +595,42 @@ function QuestionScreen({
             })}
           </div>
         )}
+        {q.type === "multi" && (
+          <div role="group" aria-labelledby={titleId} className="onb-options onb-options-multi">
+            {q.options.map((o, i) => {
+              const chosen = multiValues(value);
+              const on = chosen.includes(o.value);
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  data-option={o.value}
+                  role="checkbox"
+                  aria-checked={on}
+                  onClick={() => {
+                    // "Not sure yet" stands alone; picking anything else clears it.
+                    const nextValues = on
+                      ? chosen.filter((v) => v !== o.value)
+                      : o.value === q.exclusive
+                        ? [o.value]
+                        : [...chosen.filter((v) => v !== q.exclusive), o.value];
+                    // Keep the options' order so answers read consistently.
+                    const ordered = q.options.map((opt) => opt.value).filter((v) => nextValues.includes(v));
+                    update({ [q.id]: ordered.join("|") });
+                  }}
+                  className={`onb-option ${on ? "is-selected" : ""}`}
+                >
+                  <span aria-hidden className="onb-option-key">
+                    {on ? "✓" : KEYS[i]}
+                  </span>
+                  <span className="onb-option-text">
+                    <span className="onb-option-label">{o.label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         {error && (
           <p id={errorId} role="alert" className="onb-error">
             {error}
@@ -619,6 +666,10 @@ function QuestionScreen({
           <>
             Press a letter to choose · <Kbd>Enter ↵</Kbd> to continue
           </>
+        ) : q.type === "multi" ? (
+          <>
+            Press letters to pick as many as you like · <Kbd>Enter ↵</Kbd> to continue
+          </>
         ) : (
           <>
             <Kbd>Enter ↵</Kbd> to continue
@@ -653,8 +704,7 @@ function Review({
       <p className="eyebrow">Last step</p>
       <h1 className="onb-question-title">Does this look right?</h1>
       <p className="onb-help">
-        Tap any answer to change it. When you send this, it comes straight to me
-        so I can prepare for our call.
+        Tap any answer to change it. Your enquiry comes straight to Monika.
       </p>
 
       <div className="onb-review">
@@ -662,7 +712,7 @@ function Review({
           <section key={s.id} className="onb-review-card">
             <h2>{s.title}</h2>
             <dl>
-              {questions
+              {activeQuestions(answers)
                 .filter((q) => q.section === s.id)
                 .map((q) => {
                   const answered = isAnswered(q, answers);
@@ -726,9 +776,10 @@ function Review({
           disabled={submitting}
           className="cta onb-continue"
         >
-          {submitting ? "Sending…" : "Send to Monika"} <span aria-hidden>→</span>
+          {submitting ? "Sending…" : "Send Enquiry"} <span aria-hidden>→</span>
         </button>
       </div>
+      <p className="onb-submit-note">We&apos;ll review your enquiry and get back to you personally.</p>
     </div>
   );
 }
@@ -736,18 +787,18 @@ function Review({
 function Done({ firstName, email }: { firstName: string; email: string }) {
   const nextSteps = [
     {
-      title: "I read everything",
-      body: "I'll go through your answers so our time together is focused on you.",
+      title: "We review it",
+      body: "Monika reads every enquiry herself, so the reply fits what you need.",
     },
     {
-      title: "You get a link",
+      title: "We get in touch",
       body: email
-        ? `Your confirmation and meeting link will be sent to ${email}.`
-        : "Your confirmation and meeting link will be sent by email.",
+        ? `You'll hear back personally at ${email}.`
+        : "You'll hear back personally by email.",
     },
     {
       title: "We talk",
-      body: "A relaxed conversation about your goals and how I can best support you.",
+      body: "A relaxed call to explore your goals and the best way to support you or your team.",
     },
   ];
   return (
@@ -761,7 +812,7 @@ function Done({ firstName, email }: { firstName: string; email: string }) {
         {!firstName && "."}
       </h1>
       <p className="onb-intro-lead">
-        That&apos;s everything I need. Here&apos;s what happens next.
+        Your enquiry is on its way. Here&apos;s what happens next.
       </p>
 
       <ol className="onb-next-steps">

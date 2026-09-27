@@ -82,12 +82,19 @@ export const discoveryCalls = sqliteTable("discovery_calls", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   company: text("company").notNull(),
+  /** Enquiry form answers (see lib/discovery.ts). `interests` is values joined with "|". */
+  interests: text("interests"),
+  audience: text("audience"),
+  teamSize: text("team_size"),
+  support: text("support"),
+  startTimeline: text("start_timeline"),
+  anythingElse: text("anything_else"),
+  /** From the earlier version of the form; empty for newer enquiries. */
   persona: text("persona", {
     enum: ["professional", "business_owner", "corporate"],
-  }).notNull(),
-  goal: text("goal").notNull(),
-  challenges: text("challenges").notNull(),
-  anythingElse: text("anything_else"),
+  }),
+  goal: text("goal"),
+  challenges: text("challenges"),
   /** Set when the admin decides not to take this request forward. */
   declinedAt: integer("declined_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),

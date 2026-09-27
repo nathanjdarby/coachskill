@@ -2374,3 +2374,17 @@ fieldset.pt-field {
   gap: 14px;
   margin: 6px 0 10px;
 }
+
+.pt-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pt-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  font-size: 0.8125rem;
+}

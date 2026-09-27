@@ -1,5 +1,5 @@
-// Discovery call questions. Shared by the flow UI, the API route that
-// validates submissions, and the admin view — edit questions here only.
+// Enquiry form questions (the "discovery call" request). Shared by the flow UI, the API
+// route that validates submissions, and the admin view — edit questions here only.
 
 export type Answers = Record<string, string>;
 
@@ -13,10 +13,14 @@ type Base = {
   optional?: boolean;
   /** Short label used on the review screen and admin view. */
   label: string;
+  /** Not asked (and not required) when this returns true, e.g. team size for "Myself". */
+  skipIf?: (answers: Answers) => boolean;
 };
 
 export type Question =
   | (Base & { type: "single"; options: Option[] })
+  /** Several options; the answer is the chosen values joined with "|". */
+  | (Base & { type: "multi"; options: Option[]; exclusive?: string })
   | (Base & {
       type: "text";
       placeholder?: string;
@@ -30,8 +34,8 @@ export type FlowContext = { firstName: string };
 
 export const sections = [
   { id: "about", title: "About you" },
-  { id: "situation", title: "Your situation" },
-  { id: "goals", title: "Your goals" },
+  { id: "needs", title: "What you need" },
+  { id: "plans", title: "Next steps" },
 ] as const;
 
 export type SectionId = (typeof sections)[number]["id"];
@@ -40,22 +44,55 @@ export type QuestionId =
   | "fullName"
   | "email"
   | "company"
-  | "persona"
-  | "goal"
-  | "challenges"
+  | "interests"
+  | "audience"
+  | "teamSize"
+  | "support"
+  | "startTimeline"
   | "anythingElse";
 
+export const interestOptions: Option[] = [
+  { value: "sales_methodologies", label: "Sales Methodologies Training" },
+  { value: "leadership", label: "Leadership Development" },
+  { value: "emotional_intelligence", label: "Emotional Intelligence & 360° Feedback" },
+  { value: "enablement", label: "Sales Enablement & Onboarding" },
+  { value: "value_selling", label: "Value Selling" },
+  { value: "presentation", label: "Presentation & Storytelling Skills" },
+  { value: "objections", label: "Objection Handling & Negotiation" },
+  { value: "sales_coaching", label: "Sales Coaching" },
+  { value: "team_development", label: "Team Development" },
+  { value: "bespoke", label: "Bespoke Training" },
+  { value: "not_sure", label: "Not sure yet" },
+];
+
+export const audienceOptions: Option[] = [
+  { value: "myself", label: "Myself" },
+  { value: "team", label: "A team" },
+  { value: "leaders", label: "Managers / Leaders" },
+  { value: "sales", label: "Sales professionals" },
+  { value: "organisation", label: "Wider organisation" },
+];
+
+export const teamSizeOptions: Option[] = [
+  { value: "1", label: "1" },
+  { value: "2-10", label: "2–10" },
+  { value: "11-25", label: "11–25" },
+  { value: "26-50", label: "26–50" },
+  { value: "50+", label: "50+" },
+  { value: "not_sure", label: "Not sure yet" },
+];
+
+export const startOptions: Option[] = [
+  { value: "asap", label: "As soon as possible" },
+  { value: "1-3_months", label: "Within 1–3 months" },
+  { value: "3-6_months", label: "Within 3–6 months" },
+  { value: "exploring", label: "Just exploring" },
+];
+
+/** Answers from the earlier version of the form, kept so old requests still read well. */
 export const personaOptions: Option[] = [
-  {
-    value: "professional",
-    label: "A professional seeking mentoring",
-    hint: "Or looking for personal development",
-  },
-  {
-    value: "business_owner",
-    label: "Self-employed or a business owner",
-    hint: "Service provider, solo business owner, or small business owner with a team",
-  },
+  { value: "professional", label: "A professional seeking mentoring" },
+  { value: "business_owner", label: "Self-employed or a business owner" },
   { value: "corporate", label: "A corporate employee" },
 ];
 
@@ -65,7 +102,7 @@ export const questions: Question[] = [
     id: "fullName",
     section: "about",
     type: "text",
-    label: "Full name",
+    label: "Name",
     title: "First up — what's your name?",
     help: "Please enter your first and last name.",
     placeholder: "Jane Smith",
@@ -77,12 +114,9 @@ export const questions: Question[] = [
     section: "about",
     type: "text",
     inputType: "email",
-    label: "Email",
-    title: ({ firstName }) =>
-      firstName
-        ? `Nice to meet you, ${firstName}. What's your email?`
-        : "What's your email address?",
-    help: "Your confirmation and meeting link will be sent here.",
+    label: "Work email",
+    title: ({ firstName }) => (firstName ? `Nice to meet you, ${firstName}. What's your work email?` : "What's your work email?"),
+    help: "We'll reply to you here.",
     placeholder: "jane@company.com",
     maxLength: 254,
     autoComplete: "email",
@@ -91,53 +125,69 @@ export const questions: Question[] = [
     id: "company",
     section: "about",
     type: "text",
-    label: "Company",
-    title: "What's your company name?",
-    help: "Where do you currently work, or which business do you run?",
+    label: "Company / Organisation",
+    title: "Which company or organisation are you with?",
+    help: "If it's just you, your business name or \"Self-employed\" is fine.",
     placeholder: "e.g. Harbour Street Consulting",
     maxLength: 120,
     autoComplete: "organization",
   },
 
-  // — Your situation —
+  // — What you need —
   {
-    id: "persona",
-    section: "situation",
+    id: "interests",
+    section: "needs",
+    type: "multi",
+    label: "Interested in",
+    title: "What are you interested in?",
+    help: "Select any that apply.",
+    options: interestOptions,
+    exclusive: "not_sure",
+  },
+  {
+    id: "audience",
+    section: "needs",
     type: "single",
-    label: "Describes themselves as",
-    title: "How would you best describe yourself?",
-    help: "Select the option that matches your current situation.",
-    options: personaOptions,
+    label: "Who it's for",
+    title: "Who is this for?",
+    options: audienceOptions,
+  },
+  {
+    id: "teamSize",
+    section: "needs",
+    type: "single",
+    label: "How many people",
+    title: "Approximately how many people?",
+    options: teamSizeOptions,
+    skipIf: (a) => a.audience === "myself",
   },
 
-  // — Your goals —
+  // — Next steps —
   {
-    id: "goal",
-    section: "goals",
-    type: "textarea",
-    label: "Main goal (6 months)",
-    title: "What is your main goal for the next 6 months?",
-    help: "Describe the results you want to achieve — e.g. higher sales, confidence, better communication, presenting your product better, stronger leadership skills.",
-    placeholder: "I want to…",
-    maxLength: 2000,
+    id: "support",
+    section: "plans",
+    type: "text",
+    label: "Support with",
+    title: "What would you like support with?",
+    help: "A sentence or two is plenty.",
+    placeholder: "e.g. Helping new sales hires get up to speed faster",
+    maxLength: 300,
   },
   {
-    id: "challenges",
-    section: "goals",
-    type: "textarea",
-    label: "Challenges",
-    title: "What challenges or barriers are holding you back?",
-    help: "Tell me what feels difficult right now so I can understand how to support you best.",
-    placeholder: "Right now I find it hard to…",
-    maxLength: 2000,
+    id: "startTimeline",
+    section: "plans",
+    type: "single",
+    label: "Looking to start",
+    title: "When are you looking to start?",
+    options: startOptions,
   },
   {
     id: "anythingElse",
-    section: "goals",
+    section: "plans",
     type: "textarea",
     label: "Anything else",
-    title: "Anything else I should know before our call?",
-    help: "Optional — share anything important about your work, goals, or situation.",
+    title: "Anything else you'd like us to know?",
+    help: "Optional.",
     maxLength: 2000,
     optional: true,
   },
@@ -157,6 +207,20 @@ export function isAnswered(q: Question, answers: Answers) {
   return (answers[q.id] ?? "").trim().length > 0;
 }
 
+export function isSkipped(q: Question, answers: Answers) {
+  return q.skipIf?.(answers) ?? false;
+}
+
+/** The questions this person is asked, given their answers so far. */
+export function activeQuestions(answers: Answers) {
+  return questions.filter((q) => !isSkipped(q, answers));
+}
+
+/** A multi-choice answer as a list of values. */
+export function multiValues(value: string | null | undefined) {
+  return (value ?? "").split("|").filter(Boolean);
+}
+
 /** Returns a message when a non-empty answer is invalid, otherwise null. */
 export function validationError(q: Question, answers: Answers): string | null {
   const v = (answers[q.id] ?? "").trim();
@@ -167,14 +231,15 @@ export function validationError(q: Question, answers: Answers): string | null {
   if (q.type === "single" && !q.options.some((o) => o.value === v)) {
     return "Please choose one of the options.";
   }
+  if (q.type === "multi" && !multiValues(v).every((x) => q.options.some((o) => o.value === x))) {
+    return "Please choose from the options.";
+  }
   return null;
 }
 
 /** Required questions that are unanswered or invalid. */
 export function missingOrInvalid(answers: Answers) {
-  return questions.filter(
-    (q) => (!q.optional && !isAnswered(q, answers)) || validationError(q, answers),
-  );
+  return activeQuestions(answers).filter((q) => (!q.optional && !isAnswered(q, answers)) || validationError(q, answers));
 }
 
 /** Keeps only known question ids with string values, trimmed to each question's limit. */
@@ -185,19 +250,65 @@ export function sanitizeAnswers(raw: unknown): Answers {
   for (const q of questions) {
     const v = src[q.id];
     if (typeof v !== "string") continue;
-    const max = q.type === "single" ? 64 : q.maxLength;
+    const max = q.type === "single" ? 64 : q.type === "multi" ? 400 : q.maxLength;
     const trimmed = v.trim().slice(0, max);
     if (trimmed) out[q.id] = trimmed;
   }
   return out;
 }
 
+function optionLabel(options: Option[], value: string) {
+  return options.find((o) => o.value === value)?.label ?? value;
+}
+
 export function formatAnswer(q: Question, answers: Answers) {
   const v = answers[q.id] ?? "";
-  if (q.type === "single") return q.options.find((o) => o.value === v)?.label ?? v;
+  if (q.type === "single") return optionLabel(q.options, v);
+  if (q.type === "multi") return multiValues(v).map((x) => optionLabel(q.options, x)).join(", ");
   return v;
 }
 
 export function personaLabel(value: string) {
-  return personaOptions.find((o) => o.value === value)?.label ?? value;
+  return optionLabel(personaOptions, value);
+}
+
+type StoredEnquiry = {
+  company: string;
+  interests: string | null;
+  audience: string | null;
+  teamSize: string | null;
+  support: string | null;
+  startTimeline: string | null;
+  anythingElse: string | null;
+  persona: string | null;
+  goal: string | null;
+  challenges: string | null;
+};
+
+/** One line under the name in lists: company and who it's for. */
+export function enquirySubtitle(e: Pick<StoredEnquiry, "company" | "audience" | "teamSize" | "persona">) {
+  const who = e.audience
+    ? `For ${optionLabel(audienceOptions, e.audience).toLowerCase()}${e.teamSize && e.audience !== "myself" ? ` (${optionLabel(teamSizeOptions, e.teamSize)})` : ""}`
+    : e.persona
+      ? personaLabel(e.persona)
+      : null;
+  return [e.company, who].filter(Boolean).join(" · ");
+}
+
+/** The answers worth showing, labelled, for both the current and the earlier form. */
+export function enquiryRows(e: StoredEnquiry): { label: string; value: string; list?: string[] }[] {
+  const rows: { label: string; value: string; list?: string[] }[] = [];
+  if (e.interests) {
+    const list = multiValues(e.interests).map((x) => optionLabel(interestOptions, x));
+    rows.push({ label: "Interested in", value: list.join(", "), list });
+  }
+  if (e.audience) rows.push({ label: "Who it's for", value: optionLabel(audienceOptions, e.audience) });
+  if (e.teamSize && e.audience !== "myself") rows.push({ label: "How many people", value: optionLabel(teamSizeOptions, e.teamSize) });
+  if (e.support) rows.push({ label: "Support with", value: e.support });
+  if (e.startTimeline) rows.push({ label: "Looking to start", value: optionLabel(startOptions, e.startTimeline) });
+  if (e.persona) rows.push({ label: "Describes themselves as", value: personaLabel(e.persona) });
+  if (e.goal) rows.push({ label: "Main goal (6 months)", value: e.goal });
+  if (e.challenges) rows.push({ label: "Challenges", value: e.challenges });
+  if (e.anythingElse) rows.push({ label: "Anything else", value: e.anythingElse });
+  return rows;
 }

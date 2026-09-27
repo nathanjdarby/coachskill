@@ -25,6 +25,8 @@ async function sendEmail(input: {
   button?: { label: string; url: string };
   footnote?: string;
   attachments?: EmailAttachment[];
+  /** Overrides EMAIL_REPLY_TO, e.g. so replying to an enquiry alert reaches the enquirer. */
+  replyTo?: string;
 }): Promise<SendResult> {
   const html = renderHtml(input);
   const text = [
@@ -52,7 +54,7 @@ async function sendEmail(input: {
         subject: input.subject,
         html,
         text,
-        ...(process.env.EMAIL_REPLY_TO?.trim() ? { reply_to: process.env.EMAIL_REPLY_TO.trim() } : {}),
+        ...((input.replyTo ?? process.env.EMAIL_REPLY_TO?.trim()) ? { reply_to: input.replyTo ?? process.env.EMAIL_REPLY_TO?.trim() } : {}),
         ...(input.attachments?.length
           ? {
               attachments: input.attachments.map((a) => ({
@@ -268,6 +270,25 @@ export function emailAdminBooking(input: {
     paragraphs: input.lines,
     button: { label: input.buttonLabel ?? "Open client", url: input.url },
     attachments: input.attachments,
+  });
+}
+
+export function emailNewEnquiry(input: {
+  to: string[];
+  name: string;
+  email: string;
+  subtitle: string;
+  rows: { label: string; value: string }[];
+  url: string;
+}) {
+  return sendEmail({
+    to: input.to,
+    subject: `New enquiry: ${input.name}`,
+    heading: `New enquiry from ${input.name}`,
+    paragraphs: [`${input.email}${input.subtitle ? ` · ${input.subtitle}` : ""}`, ...input.rows.map((r) => `${r.label}: ${r.value}`)],
+    button: { label: "Open the request", url: input.url },
+    footnote: `Replying to this email goes straight to ${input.name}. Schedule a call or send a booking link from the request.`,
+    replyTo: input.email,
   });
 }
 

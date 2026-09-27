@@ -17,7 +17,7 @@ import { AccessBadge, KindBadge, StatusBadge } from "@/components/portal/AccessB
 import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
 import { requireAdmin } from "@/lib/dal";
-import { personaLabel } from "@/lib/discovery";
+import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { workshopBookingsFor } from "@/lib/attendees";
 import { formatPence } from "@/lib/money";
 import { COACHING_SLUG, listEventTypes } from "@/lib/event-types";
@@ -210,21 +210,10 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
           </section>
 
           <section className="pt-card">
-            <h2>Goals</h2>
+            <h2>Enquiry</h2>
             {discovery ? (
               <dl className="pt-dl pt-dl-stacked">
-                <dt>Describes themselves as</dt>
-                <dd>{personaLabel(discovery.persona)}</dd>
-                <dt>Main goal (6 months)</dt>
-                <dd>{discovery.goal}</dd>
-                <dt>Challenges</dt>
-                <dd>{discovery.challenges}</dd>
-                {discovery.anythingElse && (
-                  <>
-                    <dt>Anything else</dt>
-                    <dd>{discovery.anythingElse}</dd>
-                  </>
-                )}
+                <EnquiryAnswers enquiry={discovery} />
                 <dt>Submitted</dt>
                 <dd className="pt-muted">{formatDate(discovery.createdAt)}</dd>
               </dl>

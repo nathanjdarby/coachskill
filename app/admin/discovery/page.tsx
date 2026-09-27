@@ -1,10 +1,11 @@
 import { DiscoveryActions, Disclosure } from "@/components/admin/ClientForms";
+import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/DiscoveryScheduling";
 import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
 import { availableSlots, groupSlotsByDay } from "@/lib/booking";
 import { requireAdmin } from "@/lib/dal";
 import { durationFor, listEventTypes } from "@/lib/event-types";
-import { personaLabel } from "@/lib/discovery";
+import { enquirySubtitle } from "@/lib/discovery";
 import { listDiscoveryCallsWithClients } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
@@ -25,7 +26,7 @@ export default async function AdminDiscoveryPage() {
       <div className="pt-page-head">
         <h1>Discovery requests</h1>
         <p className="pt-muted">
-          Answers from the discovery call form, newest first. Schedule a call yourself or email a link so they can pick
+          Enquiries from the website&apos;s enquiry form, newest first. Schedule a call yourself or email a link so they can pick
           a time. When you decide to work with someone, add them as a client — their calls and answers move across.
         </p>
       </div>
@@ -42,7 +43,7 @@ export default async function AdminDiscoveryPage() {
               <summary>
                 <span className="pt-details-title">{call.fullName}</span>
                 <span className="pt-muted pt-small">
-                  {call.company} · {personaLabel(call.persona)}
+                  {enquirySubtitle(call)}
                 </span>
                 {nextCall && <span className="pt-badge is-info">Call {formatDateTime(nextCall.startsAt)}</span>}
                 {!nextCall && link && <span className="pt-badge is-info">Link sent</span>}
@@ -62,12 +63,7 @@ export default async function AdminDiscoveryPage() {
                     {call.email}
                   </a>
                 </dd>
-                <dt>Main goal (6 months)</dt>
-                <dd>{call.goal}</dd>
-                <dt>Challenges</dt>
-                <dd>{call.challenges}</dd>
-                <dt>Anything else</dt>
-                <dd>{call.anythingElse || <span className="pt-muted">—</span>}</dd>
+                <EnquiryAnswers enquiry={call} />
               </dl>
               {!call.declinedAt && (
                 <DiscoveryScheduling

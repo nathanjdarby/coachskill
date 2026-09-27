@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PackagesCard } from "@/components/portal/PackagesCard";
+import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { WorkshopCard, type PortalBooking } from "@/components/portal/WorkshopCard";
 import { workshopBookingsFor } from "@/lib/attendees";
 import { workshopJoinUrl } from "@/lib/workshop-invite";
@@ -124,19 +125,10 @@ export default async function PortalHomePage() {
 
       {(!attendeeOnly || data.discovery) && (
         <section className="pt-card">
-          <h2>Your goals</h2>
+          <h2>{data.discovery ? "What you told us" : "Your goals"}</h2>
           {data.discovery ? (
             <dl className="pt-dl pt-dl-stacked">
-              <dt>Main goal for the next 6 months</dt>
-              <dd>{data.discovery.goal}</dd>
-              <dt>What&apos;s been holding you back</dt>
-              <dd>{data.discovery.challenges}</dd>
-              {data.discovery.anythingElse && (
-                <>
-                  <dt>Other things you shared</dt>
-                  <dd>{data.discovery.anythingElse}</dd>
-                </>
-              )}
+              <EnquiryAnswers enquiry={data.discovery} />
             </dl>
           ) : (
             <p className="pt-muted">We&apos;ll capture your goals together in our first session.</p>

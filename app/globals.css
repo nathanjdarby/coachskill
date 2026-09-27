@@ -3455,3 +3455,16 @@ a.workshop-when-more {
     margin-bottom: 20px;
   }
 }
+
+@media (min-width: 640px) {
+  .onb-options-multi {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.onb-submit-note {
+  margin: 14px 0 0;
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}

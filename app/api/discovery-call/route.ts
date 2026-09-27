@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { appUrl } from "@/lib/app-url";
 import { getDb } from "@/lib/db";
 import { discoveryCalls } from "@/lib/db/schema";
-import { missingOrInvalid, sanitizeAnswers } from "@/lib/discovery";
+import { enquiryRows, enquirySubtitle, missingOrInvalid, sanitizeAnswers } from "@/lib/discovery";
+import { emailNewEnquiry } from "@/lib/email";
+import { adminEmails } from "@/lib/portal";
 import {
   clientIp,
   countLinks,
@@ -73,18 +76,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  let saved;
   try {
     const db = getDb();
-    await db.insert(discoveryCalls).values({
-      fullName: answers.fullName,
-      email: answers.email.toLowerCase(),
-      company: answers.company,
-      persona: answers.persona as "professional" | "business_owner" | "corporate",
-      goal: answers.goal,
-      challenges: answers.challenges,
-      anythingElse: answers.anythingElse ?? null,
-      createdAt: new Date(),
-    });
+    [saved] = await db
+      .insert(discoveryCalls)
+      .values({
+        fullName: answers.fullName,
+        email: answers.email.toLowerCase(),
+        company: answers.company,
+        interests: answers.interests,
+        audience: answers.audience,
+        // Not asked when it's just for themselves.
+        teamSize: answers.audience === "myself" ? "1" : answers.teamSize,
+        support: answers.support,
+        startTimeline: answers.startTimeline,
+        anythingElse: answers.anythingElse ?? null,
+        createdAt: new Date(),
+      })
+      .returning();
   } catch (err) {
     console.error("Discovery call insert failed", err);
     return NextResponse.json(
@@ -93,5 +103,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Let Monika know straight away; a failed email mustn't fail the submission.
+  after(async () => {
+    try {
+      const to = await adminEmails();
+      if (!to.length || !saved) return;
+      await emailNewEnquiry({
+        to,
+        name: saved.fullName,
+        email: saved.email,
+        subtitle: enquirySubtitle(saved),
+        rows: enquiryRows(saved),
+        url: await appUrl(`/admin/discovery#request-${saved.id}`),
+      });
+    } catch (err) {
+      console.error("New enquiry email failed", err);
+    }
+  });
   return NextResponse.json({ ok: true });
 }
