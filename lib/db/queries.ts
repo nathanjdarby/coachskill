@@ -24,12 +24,13 @@ export async function getDefaultWorkshop() {
 
 export async function listWorkshops() {
   const db = getDb();
-  return db.select().from(workshops).orderBy(workshops.name);
+  return db.select().from(workshops).orderBy(desc(workshops.startsAt));
 }
 
 export type SignupListRow = Signup & {
   workshopSlug: string;
   workshopName: string;
+  workshopStartsAt: Date | null;
   /** Client-area account for this booking: none yet, invited (no password), or active. */
   account: "none" | "invited" | "active";
 };
@@ -58,6 +59,7 @@ export async function listSignupsWithWorkshop(filters: {
       signup: signups,
       workshopSlug: workshops.slug,
       workshopName: workshops.name,
+      workshopStartsAt: workshops.startsAt,
       userId: users.id,
       hasPassword: users.passwordHash,
     })
@@ -71,6 +73,7 @@ export async function listSignupsWithWorkshop(filters: {
     ...r.signup,
     workshopSlug: r.workshopSlug,
     workshopName: r.workshopName,
+    workshopStartsAt: r.workshopStartsAt,
     account: r.userId == null ? "none" : r.hasPassword ? "active" : "invited",
   }));
 }
