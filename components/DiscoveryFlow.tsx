@@ -289,14 +289,15 @@ export function DiscoveryFlow() {
     <div className="onb">
       <header className="onb-header">
         <div className="onb-header-row">
-          <Link href="/" className="header-logo-link">
+          <Link href="/" className="header-brand">
             <Image
               src="/assets/coach-skill-logo.png"
-              alt="Coach Skill"
+              alt=""
               className="logo"
               width={120}
               height={40}
             />
+            <span className="header-wordmark">Coach Skill</span>
           </Link>
           {step !== "done" && step !== "intro" && (
             <div className="onb-header-meta">

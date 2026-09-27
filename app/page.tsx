@@ -39,7 +39,7 @@ export default function Home() {
                 />
               </div>
               <div className="hero-content">
-                <p className="eyebrow">Monika Kozlowska · Coach Skill</p>
+                <p className="eyebrow">Monika Kozlowska</p>
                 <h1 className="hero-title home-hero-title">
                   Sell, present and communicate with confidence
                 </h1>

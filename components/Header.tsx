@@ -10,14 +10,15 @@ export function Header({ back = false }: { back?: boolean }) {
             <span aria-hidden>←</span> Back
           </Link>
         )}
-        <Link href="/" className="header-logo-link">
+        <Link href="/" className="header-brand">
           <Image
             src="/assets/coach-skill-logo.png"
-            alt="Coach Skill"
+            alt=""
             className="logo"
             width={120}
             height={40}
           />
+          <span className="header-wordmark">Coach Skill</span>
         </Link>
       </div>
     </header>
