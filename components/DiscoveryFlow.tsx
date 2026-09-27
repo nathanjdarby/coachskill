@@ -430,7 +430,7 @@ function Intro({
         priority
       />
       <p className="eyebrow onb-intro-eyebrow">
-        {resuming ? "Welcome back" : "Get in touch"}
+        {resuming ? "Welcome back" : "Discovery call"}
       </p>
       <h1 className="onb-intro-title">
         {resuming ? (
