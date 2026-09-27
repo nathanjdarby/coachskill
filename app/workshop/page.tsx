@@ -5,6 +5,7 @@ import { Hero } from "@/components/Hero";
 import { Benefits } from "@/components/Benefits";
 import { Coach } from "@/components/Coach";
 import { WorkshopDetails } from "@/components/WorkshopDetails";
+import { TeamTraining } from "@/components/TeamTraining";
 import { Footer } from "@/components/Footer";
 import { CheckoutBanner } from "@/components/CheckoutBanner";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 export default function WorkshopPage() {
   return (
     <>
-      <Header />
+      <Header back />
       <Suspense fallback={null}>
         <CheckoutBanner />
       </Suspense>
@@ -29,6 +30,8 @@ export default function WorkshopPage() {
         <Coach />
         <div className="section-connector" />
         <WorkshopDetails />
+        <div className="section-connector" />
+        <TeamTraining />
       </main>
       <Footer />
     </>

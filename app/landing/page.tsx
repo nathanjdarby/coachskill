@@ -197,7 +197,7 @@ export default function LandingPage() {
 
   return (
     <>
-      <Header />
+      <Header back />
       <main>
         <section className="section coachskill-hero" id="top">
           <div className="container coachskill-stack">
@@ -338,33 +338,38 @@ export default function LandingPage() {
               <span>Two ways we can work together</span>
             </h2>
             <div className="options-grid">
-              <article className="option-card">
-                <h3>Option 1: 1:1 Personalised Coaching</h3>
+              <article className="option-card option-card-featured">
+                <span className="option-badge">Recommended</span>
+                <h3>Group Training + Mentoring</h3>
                 <p>
-                  A tailored programme built around your goals. Choose a focused intensive or a
-                  3-month development journey.
+                  You learn faster alongside people chasing the same results. Groups are capped at
+                  5, so you still get personal feedback — plus live practice partners and the
+                  accountability that keeps you going.
                 </p>
                 <ul>
-                  <li>Individual attention</li>
-                  <li>Personal feedback</li>
-                  <li>A mentor in your corner</li>
-                  <li>Visible growth in communication, confidence and presence</li>
+                  <li>2.5-hour Value Selling Workshop, max 5 people</li>
+                  <li>Practise real pitches and get feedback on the spot</li>
+                  <li>Direct mentoring from Monika</li>
+                  <li>A network of peers who hold you to it</li>
                 </ul>
-                <a className="cta" href="/discovery-call">Book a discovery call</a>
+                <p className="option-note">
+                  Training a team? <a href="/workshop#teams">Book a private group session</a>.
+                </p>
+                <a className="cta" href="/workshop">See the Value Selling Workshop</a>
               </article>
 
               <article className="option-card">
-                <h3>Option 2: Group Training + Mentoring</h3>
+                <h3>1:1 Personalised Coaching</h3>
                 <p>
-                  Learn and grow with a supportive community of people aiming for similar outcomes.
+                  Prefer to work one-to-one? A programme built entirely around your goals — a
+                  focused intensive or a 3-month development journey.
                 </p>
                 <ul>
-                  <li>Practical communication and confidence training</li>
-                  <li>Live group practice sessions</li>
-                  <li>Direct mentoring and feedback</li>
-                  <li>Shared encouragement and accountability</li>
+                  <li>Individual attention and feedback</li>
+                  <li>A mentor in your corner</li>
+                  <li>Growth in communication, confidence and presence</li>
                 </ul>
-                <a className="cta" href="#contact">Join the group programme</a>
+                <a className="cta cta-outline" href="/discovery-call">Book a discovery call</a>
               </article>
             </div>
           </div>

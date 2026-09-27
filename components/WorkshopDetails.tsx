@@ -4,20 +4,22 @@ const WORKSHOP_ITEMS = [
   {
     title: "2.5 hours",
     description:
-      "Focused, practical session designed for maximum impact.",
+      "Focused and practical — you leave with a pitch you can use straight away.",
   },
   {
-    title: "Small group workshop",
+    title: "Small group, max 5",
     description:
-      "Maximum 5 participants for personalised attention and deep learning.",
+      "Enough people to practise with, small enough that every pitch gets personal feedback.",
   },
   {
-    title: "Learn and network",
-    description: "Built-in time to learn from others and expand your network.",
+    title: "Learn from each other",
+    description:
+      "Hear how others sell, swap what works and grow your network.",
   },
   {
-    title: "Wider Services Portfolio",
-    description: "This workshop is part of the Wider Services Portfolio.",
+    title: "Keep the momentum",
+    description:
+      "Continue with group mentoring or 1:1 coaching as part of the wider Coach Skill programme.",
   },
 ];
 

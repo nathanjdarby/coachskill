@@ -1,36 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Header";
-import { Coach } from "@/components/Coach";
 import { Footer } from "@/components/Footer";
+
+const AUDIENCES = ["Professionals", "Business owners", "Corporate teams"];
 
 const STEPS = [
   {
     title: "Tell me about you",
-    body: "Answer a few short questions about your goals and what's holding you back. It takes about 3 minutes.",
+    body: "A few short questions about your goals. About 3 minutes.",
   },
   {
     title: "I prepare",
-    body: "I read everything before we speak, so our time is focused on you — not on filling in background.",
+    body: "I read everything first, so our time is focused on you.",
   },
   {
     title: "We talk",
-    body: "A relaxed conversation about where you want to be and the best way I can help you get there.",
-  },
-];
-
-const AUDIENCES = [
-  {
-    title: "Professionals",
-    body: "Looking for mentoring or personal development to grow in confidence and presence.",
-  },
-  {
-    title: "Business owners",
-    body: "Self-employed, running a solo business, or leading a small team — and ready to win more of the right customers.",
-  },
-  {
-    title: "Corporate employees",
-    body: "Wanting to pitch, present and communicate with more clarity and impact.",
+    body: "A relaxed call about where you want to be and how I can help.",
   },
 ];
 
@@ -55,12 +41,11 @@ export default function Home() {
               <div className="hero-content">
                 <p className="eyebrow">Monika Kozlowska · Coach Skill</p>
                 <h1 className="hero-title home-hero-title">
-                  Book a discovery call with me
+                  Sell, present and communicate with confidence
                 </h1>
                 <p className="subtitle">
-                  Let&apos;s talk about your goals, what&apos;s holding you back,
-                  and how I can help you sell, present and communicate with more
-                  confidence.
+                  Coaching for professionals, business owners and corporate
+                  teams. It starts with a free discovery call.
                 </p>
                 <div className="home-hero-actions">
                   <Link href="/discovery-call" className="cta cta-hero">
@@ -76,74 +61,72 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="section-connector" />
-
         <section className="section home-section">
-          <div className="container">
+          <div className="container home-narrow">
             <h2 className="section-title">
               How it <span>works</span>
             </h2>
-            <ol className="home-cards">
+            <ol className="home-steps">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="home-card">
-                  <span className="home-card-num">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3>{s.title}</h3>
-                  <p>{s.body}</p>
+                <li key={s.title} className="home-step">
+                  <span className="home-step-num">{i + 1}</span>
+                  <div>
+                    <h3>{s.title}</h3>
+                    <p>{s.body}</p>
+                  </div>
                 </li>
               ))}
             </ol>
-            <div className="home-center">
-              <Link href="/discovery-call" className="cta cta-hero">
-                Start now <span aria-hidden>→</span>
+          </div>
+        </section>
+
+        <section className="section home-section">
+          <div className="container home-narrow home-trust">
+            <p className="home-trust-lead">
+              18+ years in sales strategy, value selling and presentations
+              across the UK, Asia and the USA — training hundreds of sales
+              professionals every year.
+            </p>
+            <div className="companies">
+              <span className="company-tag">Honeywell</span>
+              <span className="company-tag">Intermec</span>
+              <span className="company-tag">NICE</span>
+            </div>
+            <p className="home-audiences">
+              Working with {AUDIENCES.join(" · ")}
+            </p>
+            <div className="home-links">
+              <Link href="/meet-monika" className="home-secondary-link">
+                <strong>Meet Monika</strong> <span aria-hidden>→</span>
+              </Link>
+              <Link href="/landing" className="home-secondary-link">
+                <strong>About Coach Skill</strong> <span aria-hidden>→</span>
               </Link>
             </div>
           </div>
         </section>
 
-        <section className="section home-section">
-          <div className="container">
+        <section className="section home-final">
+          <div className="container home-narrow home-center">
             <h2 className="section-title">
-              Who I <span>work with</span>
+              Ready to <span>start?</span>
             </h2>
-            <ul className="home-cards">
-              {AUDIENCES.map((a) => (
-                <li key={a.title} className="home-card">
-                  <h3>{a.title}</h3>
-                  <p>{a.body}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <Coach />
-
-        <section className="section">
-          <div className="container">
-            <div className="options-grid home-options">
-              <article className="option-card">
-                <h3>Not sure where to start?</h3>
-                <p>
-                  A discovery call is the best first step. Tell me where you are
-                  now and we&apos;ll work out the right way forward together.
-                </p>
-                <Link href="/discovery-call" className="cta">
-                  Book a discovery call
-                </Link>
-              </article>
-              <article className="option-card">
-                <h3>Value Selling Workshop</h3>
-                <p>
-                  A focused 2.5-hour small-group workshop that transforms how you
-                  pitch — from feature-heavy explanations to value-led
-                  storytelling.
-                </p>
-                <Link href="/workshop" className="cta home-cta-outline">
-                  See the workshop
-                </Link>
-              </article>
+            <p className="section-lead">
+              Join the Value Selling Workshop: 2.5 hours in a small group of up
+              to 5, with personal feedback on your pitch.
+            </p>
+            <Link href="/workshop" className="cta cta-hero">
+              See the Value Selling Workshop <span aria-hidden>→</span>
+            </Link>
+            <div className="home-links">
+              <Link href="/workshop#teams" className="home-secondary-link">
+                Training a team? <strong>Private group sessions</strong>{" "}
+                <span aria-hidden>→</span>
+              </Link>
+              <Link href="/discovery-call" className="home-secondary-link">
+                Prefer one-to-one? <strong>Book a discovery call</strong>{" "}
+                <span aria-hidden>→</span>
+              </Link>
             </div>
           </div>
         </section>

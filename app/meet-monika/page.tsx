@@ -12,7 +12,7 @@ export const metadata = {
 export default function MeetMonikaPage() {
   return (
     <>
-      <Header />
+      <Header back />
       <main>
         {/* Hero */}
         <section className="section meet-monika-hero">

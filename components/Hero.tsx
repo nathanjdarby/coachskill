@@ -19,9 +19,10 @@ export function Hero() {
           <div className="hero-content">
             <h1 className="hero-title">Value Selling Training</h1>
             <p className="subtitle">
-              A focused 2.5-hour workshop that transforms how you pitch—from
-              feature-heavy explanations to value-led storytelling that keeps
-              customers engaged.
+              A focused 2.5-hour small-group workshop that transforms how you
+              pitch — from feature-heavy explanations to value-led storytelling
+              that keeps customers engaged. Maximum 5 people, so every pitch gets
+              real feedback.
             </p>
             <SecurePlaceButton variant="hero" />
           </div>

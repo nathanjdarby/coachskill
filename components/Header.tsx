@@ -1,10 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export function Header() {
+export function Header({ back = false }: { back?: boolean }) {
   return (
     <header>
       <div className="container">
+        {back && (
+          <Link href="/" className="header-back">
+            <span aria-hidden>←</span> Back
+          </Link>
+        )}
         <Link href="/" className="header-logo-link">
           <Image
             src="/assets/coach-skill-logo.png"
@@ -13,23 +18,6 @@ export function Header() {
             width={120}
             height={40}
           />
-        </Link>
-        <nav className="header-nav">
-          <Link href="/" className="header-link">
-            Home
-          </Link>
-          <Link href="/meet-monika" className="header-link">
-            Meet Monika
-          </Link>
-          <Link href="/workshop" className="header-link">
-            Workshop
-          </Link>
-          <Link href="/landing" className="header-link">
-            About Coach Skill
-          </Link>
-        </nav>
-        <Link href="/login" className="header-link header-login">
-          Client login
         </Link>
       </div>
     </header>
