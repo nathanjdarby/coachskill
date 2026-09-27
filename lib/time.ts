@@ -63,3 +63,21 @@ export function parseLondonDateTime(value: string): Date | null {
   result = guess - londonOffsetMs(new Date(result));
   return Number.isNaN(result) ? null : new Date(result);
 }
+
+/** Formats a date as a `<input type="datetime-local">` value in London time. */
+export function toLondonInputValue(d: Date) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: TIME_ZONE,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+      .formatToParts(d)
+      .map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}

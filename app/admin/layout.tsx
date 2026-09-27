@@ -57,12 +57,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </span>
             <Count n={counts.newDiscoveryRequests} label="new requests" />
           </NavLink>
-          <NavLink href="/admin/signups">
+          <NavLink href="/admin/workshops" also={["/admin/signups"]}>
             <TabIcon name="signups" />
-            <span>
-              <span className="pt-desktop-inline">Workshop s</span>
-              <span className="pt-mobile-inline">S</span>ignups
-            </span>
+            <span>Workshops</span>
           </NavLink>
         </nav>
       </header>

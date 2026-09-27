@@ -1,4 +1,5 @@
 import "server-only";
+import { formatPence } from "@/lib/money";
 import { formatDateTime } from "@/lib/time";
 
 // Transactional email via the Resend REST API. Without RESEND_API_KEY, emails
@@ -154,5 +155,72 @@ export function emailSessionBooked(input: { to: string; name: string; title: str
     heading: `Hi ${firstName(input.name)}, our next session is booked`,
     paragraphs: [`${input.title} — ${formatDateTime(input.startsAt)} (UK time), ${input.durationMinutes} minutes.`],
     button: { label: "View in your client area", url: input.url },
+  });
+}
+
+// — Workshop payments —
+
+type WorkshopInfo = { workshopName: string; startsAt: Date | null; location: string | null };
+
+function workshopLine(w: WorkshopInfo) {
+  const when = w.startsAt ? `${formatDateTime(w.startsAt)} (UK time)` : "Date to be confirmed — I'll email you as soon as it's set";
+  return `${w.workshopName}: ${when}${w.location ? `, ${w.location}` : ""}.`;
+}
+
+export function emailDepositConfirmed(input: WorkshopInfo & { to: string; name: string; balancePence: number }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Your place is secured: ${input.workshopName}`,
+    heading: `Thanks ${firstName(input.name)}, your place is secured`,
+    paragraphs: [
+      "I've received your deposit and your place on the workshop is reserved.",
+      workshopLine(input),
+      `The remaining ${formatPence(input.balancePence)} is due a week before the workshop. I'll email you a secure payment link then — there's nothing to do until it arrives.`,
+    ],
+    footnote: "Your payment receipt comes separately from Stripe.",
+  });
+}
+
+export function emailBalanceRequest(input: WorkshopInfo & { to: string; name: string; balancePence: number; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Balance due: ${input.workshopName}`,
+    heading: `Hi ${firstName(input.name)}, the workshop is a week away`,
+    paragraphs: [workshopLine(input), `Please pay the remaining ${formatPence(input.balancePence)} to confirm your place.`],
+    button: { label: `Pay ${formatPence(input.balancePence)}`, url: input.url },
+    footnote: "Payment is handled securely by Stripe. If you've already paid, please ignore this email.",
+  });
+}
+
+export function emailBalanceReminder(input: WorkshopInfo & { to: string; name: string; balancePence: number; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Reminder: balance due for ${input.workshopName}`,
+    heading: `Hi ${firstName(input.name)}, a quick reminder`,
+    paragraphs: [
+      workshopLine(input),
+      `The remaining ${formatPence(input.balancePence)} is still outstanding. Please pay before the workshop to keep your place.`,
+    ],
+    button: { label: `Pay ${formatPence(input.balancePence)}`, url: input.url },
+    footnote: "If something's come up, just reply to this email.",
+  });
+}
+
+export function emailBalancePaid(input: WorkshopInfo & { to: string; name: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `You're all set: ${input.workshopName}`,
+    heading: `You're all set, ${firstName(input.name)}`,
+    paragraphs: ["Thanks — your workshop is fully paid.", workshopLine(input), "I'm looking forward to seeing you there."],
+  });
+}
+
+export function emailAdminPayment(input: { to: string[]; subject: string; lines: string[]; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: input.subject,
+    heading: input.subject,
+    paragraphs: input.lines,
+    button: { label: "Open in admin", url: input.url },
   });
 }

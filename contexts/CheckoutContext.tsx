@@ -8,9 +8,12 @@ import {
   useRef,
   useEffect,
 } from "react";
+import { formatPence } from "@/lib/money";
+import { formatDateTime } from "@/lib/time";
+import { FALLBACK_OFFER, type WorkshopOffer } from "@/lib/workshop-offer";
 
 type CheckoutContextType = {
-  openCheckout: () => void;
+  openCheckout: (offer?: WorkshopOffer) => void;
   closeCheckout: () => void;
 };
 
@@ -28,9 +31,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [offer, setOffer] = useState<WorkshopOffer>(FALLBACK_OFFER);
   const formRef = useRef<HTMLFormElement>(null);
+  const deposit = formatPence(offer.depositPence);
 
-  const openCheckout = useCallback(() => {
+  const openCheckout = useCallback((next?: WorkshopOffer) => {
+    setOffer(next ?? FALLBACK_OFFER);
     setStep(1);
     setError(null);
     setEmailError(null);
@@ -93,7 +99,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, workshopSlug: offer.slug ?? undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -129,7 +135,10 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
             ×
           </button>
           <h3>Secure your place</h3>
-          <p className="modal-subtitle">£25 deposit</p>
+          <p className="modal-subtitle">
+            {deposit} deposit
+            {offer.startsAt ? ` · ${formatDateTime(new Date(offer.startsAt))}` : ""}
+          </p>
 
           <form ref={formRef} className="checkout-form" onSubmit={handleSubmit}>
             <div className="step-indicator">
@@ -188,7 +197,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
                 data-step="2"
               >
                 <div className="amount-row">
-                  Total <strong>£25</strong>
+                  Total <strong>{deposit}</strong>
                 </div>
                 <p className="checkout-stripe-note">
                   You&apos;ll complete payment securely on Stripe.
@@ -212,7 +221,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
                     className="btn btn-primary"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Redirecting…" : "Pay £25"}
+                    {isLoading ? "Redirecting…" : `Pay ${deposit}`}
                   </button>
                 </div>
               </div>

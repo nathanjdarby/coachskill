@@ -3,12 +3,15 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const STATUSES = ["success", "canceled", "balance_paid", "invalid_link", "error"] as const;
+type Status = (typeof STATUSES)[number];
+
 export function CheckoutBanner() {
   const searchParams = useSearchParams();
   // Read the Stripe redirect param once on mount; it's cleared from the URL below
-  const [status, setStatus] = useState<"success" | "canceled" | null>(() => {
+  const [status, setStatus] = useState<Status | null>(() => {
     const checkout = searchParams.get("checkout");
-    return checkout === "success" || checkout === "canceled" ? checkout : null;
+    return STATUSES.includes(checkout as Status) ? (checkout as Status) : null;
   });
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export function CheckoutBanner() {
 
   return (
     <div
-      className={`checkout-banner checkout-banner--${status}`}
+      className={`checkout-banner checkout-banner--${status === "balance_paid" ? "success" : status === "success" ? "success" : "canceled"}`}
       role="status"
       aria-live="polite"
     >
@@ -32,6 +35,24 @@ export function CheckoutBanner() {
           <strong>Payment successful.</strong> Your place is secured. We&apos;ll
           be in touch with next steps. Please check your spam/junk folder if
           you can&apos;t find your confirmation email.
+        </p>
+      )}
+      {status === "balance_paid" && (
+        <p>
+          <strong>You&apos;re fully paid.</strong> Thank you — your place on the
+          workshop is confirmed. See you there!
+        </p>
+      )}
+      {status === "invalid_link" && (
+        <p>
+          <strong>That payment link isn&apos;t valid.</strong> Please reply to
+          your email from Monika and she&apos;ll sort it out.
+        </p>
+      )}
+      {status === "error" && (
+        <p>
+          <strong>We couldn&apos;t open the payment page.</strong> Please try the
+          link again in a moment.
         </p>
       )}
       {status === "canceled" && (

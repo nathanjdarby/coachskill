@@ -1,5 +1,6 @@
 import { listSignupsWithWorkshop, listWorkshops } from "@/lib/db/queries";
 import { AdminSignupsTable } from "@/components/AdminSignupsTable";
+import Link from "next/link";
 import { requireAdmin } from "@/lib/dal";
 
 export default async function AdminSignupsPage({
@@ -28,6 +29,9 @@ export default async function AdminSignupsPage({
 
   return (
     <div className="pt-page">
+      <Link href="/admin/workshops" className="pt-link pt-small">
+        ← Workshops
+      </Link>
       <div className="pt-page-head">
         <h1>Workshop signups</h1>
         <p className="pt-muted">

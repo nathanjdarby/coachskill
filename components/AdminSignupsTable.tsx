@@ -2,8 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { markBalancePaid, sendBalanceLink } from "@/app/actions/workshops";
+import type { FormState } from "@/app/actions/types";
+import { FormMessage } from "@/components/portal/FormBits";
 import type { SignupListRow } from "@/lib/db/queries";
-import { formatDateTime } from "@/lib/time";
+import { formatPence } from "@/lib/money";
+import { formatDate, formatDateTime } from "@/lib/time";
 
 function statusBadgeClass(status: string) {
   if (status === "pending") return "admin-badge pending";
@@ -16,6 +20,19 @@ function statusBadgeClass(status: string) {
 export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [results, setResults] = useState<Record<number, FormState>>({});
+
+  async function runPaymentAction(id: number, action: (id: number) => Promise<FormState>, confirmText?: string) {
+    if (confirmText && !confirm(confirmText)) return;
+    setBusyId(id);
+    try {
+      const result = await action(id);
+      setResults((r) => ({ ...r, [id]: result }));
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function patchStatus(
     id: number,
@@ -83,6 +100,7 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
             <th>Email</th>
             <th>Source</th>
             <th>Status</th>
+            <th>Payment</th>
             <th>Notes</th>
             <th>Actions</th>
           </tr>
@@ -97,6 +115,9 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
               <td data-label="Source">{s.source}</td>
               <td data-label="Status">
                 <span className={statusBadgeClass(s.status)}>{s.status}</span>
+              </td>
+              <td data-label="Payment">
+                <PaymentStatus signup={s} />
               </td>
               <td className="admin-cell-notes">
                 <NotesCell
@@ -129,12 +150,54 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
                     Decline
                   </button>
                 </div>
+                {s.depositPaidAt && !s.balancePaidAt && s.status !== "declined" && (
+                  <div className="admin-actions admin-pay-actions">
+                    <button
+                      type="button"
+                      disabled={busyId === s.id}
+                      onClick={() => runPaymentAction(s.id, sendBalanceLink)}
+                    >
+                      {s.balanceRequestSentAt ? "Resend balance link" : "Send balance link"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busyId === s.id}
+                      onClick={() =>
+                        runPaymentAction(s.id, markBalancePaid, `Mark ${s.name}'s balance as paid outside Stripe?`)
+                      }
+                    >
+                      Mark balance paid
+                    </button>
+                  </div>
+                )}
+                <FormMessage state={results[s.id]} />
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function PaymentStatus({ signup: s }: { signup: SignupListRow }) {
+  if (!s.depositPaidAt) return <span className="admin-muted">No payment</span>;
+  return (
+    <span className="pt-pay-status">
+      <span>Deposit paid · {formatPence(s.amountPaidPence)} total</span>
+      {s.balancePaidAt ? (
+        <span className="admin-badge accepted">Balance paid {formatDate(s.balancePaidAt)}</span>
+      ) : s.balanceRequestSentAt ? (
+        <span className="admin-badge pending">
+          Balance requested {formatDate(s.balanceRequestSentAt)}
+          {s.balanceReminderSentAt ? ` · reminded ${formatDate(s.balanceReminderSentAt)}` : ""}
+        </span>
+      ) : s.status === "pending" || s.status === "accepted" ? (
+        <span className="admin-muted">Balance link sends a week before</span>
+      ) : (
+        <span className="admin-muted">No automatic balance email while {s.status.replace("_", " ")}</span>
+      )}
+    </span>
   );
 }
 

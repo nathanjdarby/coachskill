@@ -1655,6 +1655,10 @@ footer p {
   border-color: rgba(59, 130, 246, 0.4);
 }
 
+.admin-pay-actions {
+  margin-top: 8px;
+}
+
 .admin-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -1852,6 +1856,14 @@ footer p {
   .admin-table-stack .admin-actions button {
     padding: 11px 8px;
     font-size: 0.875rem;
+  }
+
+  .admin-table-stack .admin-pay-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-table-stack td[data-label="Payment"] .pt-pay-status {
+    align-items: flex-end;
   }
 }
 
@@ -2883,6 +2895,40 @@ header.onb-header {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Workshop hero: date, location and places left */
+.workshop-when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.workshop-when span {
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-card);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.workshop-when .is-low {
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fbbf24;
+}
+
+.workshop-when .is-full {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+@media (max-width: 767px) {
+  .workshop-when {
+    justify-content: center;
+    margin: 0 0 4px;
+  }
 }
 
 /* ==========================================================================

@@ -5,13 +5,24 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
+/** One row per dated workshop run (the slug is per run). */
 export const workshops = sqliteTable("workshops", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   stripePriceId: text("stripe_price_id"),
   stripeProductId: text("stripe_product_id"),
+  startsAt: integer("starts_at", { mode: "timestamp_ms" }),
+  durationMinutes: integer("duration_minutes").notNull().default(150),
+  location: text("location"),
+  /** Null means no seat limit. */
+  capacity: integer("capacity"),
+  depositPence: integer("deposit_pence").notNull().default(2500),
+  balancePence: integer("balance_pence").notNull().default(37400),
+  /** Only published runs are offered on the public workshop page. */
+  published: integer("published", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
 });
 
 export const signups = sqliteTable(
@@ -36,6 +47,15 @@ export const signups = sqliteTable(
       .notNull()
       .default("pending"),
     notes: text("notes"),
+    depositPaidAt: integer("deposit_paid_at", { mode: "timestamp_ms" }),
+    /** Running total paid via Stripe or recorded by the admin, in pence. */
+    amountPaidPence: integer("amount_paid_pence").notNull().default(0),
+    /** Set when the deposit confirmation email has been sent. */
+    confirmationSentAt: integer("confirmation_sent_at", { mode: "timestamp_ms" }),
+    balanceRequestSentAt: integer("balance_request_sent_at", { mode: "timestamp_ms" }),
+    balanceReminderSentAt: integer("balance_reminder_sent_at", { mode: "timestamp_ms" }),
+    balanceCheckoutSessionId: text("balance_checkout_session_id"),
+    balancePaidAt: integer("balance_paid_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
@@ -59,6 +79,13 @@ export const discoveryCalls = sqliteTable("discovery_calls", {
   challenges: text("challenges").notNull(),
   anythingElse: text("anything_else"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/** Stripe event ids already processed, so webhook retries are ignored. */
+export const stripeEvents = sqliteTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 export type Workshop = typeof workshops.$inferSelect;

@@ -981,6 +981,75 @@ header.pt-topbar {
   font-weight: 700;
 }
 
+/* Admin: workshops */
+@media (min-width: 560px) {
+  .pt-field-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pt-workshop > .pt-muted {
+  margin-top: 4px;
+}
+
+.pt-workshop-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0 10px;
+}
+
+.pt-workshop-stats > div {
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+
+.pt-workshop-stats dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.pt-workshop-stats dd {
+  margin-top: 2px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.pt-workshop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pt-details-inline {
+  margin-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pt-details-inline > summary {
+  padding: 14px 0 4px;
+}
+
+.pt-details-inline > .pt-details-body {
+  padding: 10px 0 0;
+}
+
+.pt-pay-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 767px) {
+  .pt-workshop-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ==========================================================================
    Client portal + admin: app layout on mobile
    ========================================================================== */

@@ -49,45 +49,13 @@ export async function listSignupsWithWorkshop(filters: {
         : and(...conditions);
 
   const rows = await db
-    .select({
-      id: signups.id,
-      workshopId: signups.workshopId,
-      name: signups.name,
-      email: signups.email,
-      phone: signups.phone,
-      company: signups.company,
-      metadataJson: signups.metadataJson,
-      source: signups.source,
-      externalId: signups.externalId,
-      status: signups.status,
-      notes: signups.notes,
-      createdAt: signups.createdAt,
-      updatedAt: signups.updatedAt,
-      workshopSlug: workshops.slug,
-      workshopName: workshops.name,
-    })
+    .select({ signup: signups, workshopSlug: workshops.slug, workshopName: workshops.name })
     .from(signups)
     .innerJoin(workshops, eq(signups.workshopId, workshops.id))
     .where(whereClause)
     .orderBy(desc(signups.createdAt));
 
-  return rows.map((r) => ({
-    id: r.id,
-    workshopId: r.workshopId,
-    name: r.name,
-    email: r.email,
-    phone: r.phone,
-    company: r.company,
-    metadataJson: r.metadataJson,
-    source: r.source,
-    externalId: r.externalId,
-    status: r.status,
-    notes: r.notes,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-    workshopSlug: r.workshopSlug,
-    workshopName: r.workshopName,
-  }));
+  return rows.map((r) => ({ ...r.signup, workshopSlug: r.workshopSlug, workshopName: r.workshopName }));
 }
 
 export async function getSignupById(id: number) {

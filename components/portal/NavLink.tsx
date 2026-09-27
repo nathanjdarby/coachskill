@@ -6,14 +6,18 @@ import { usePathname } from "next/navigation";
 export function NavLink({
   href,
   exact = false,
+  also = [],
   children,
 }: {
   href: string;
   exact?: boolean;
+  /** Other path prefixes that should also mark this link active. */
+  also?: string[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const matches = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+  const active = exact ? pathname === href : matches(href) || also.some(matches);
   return (
     <Link href={href} className={`pt-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
       {children}
