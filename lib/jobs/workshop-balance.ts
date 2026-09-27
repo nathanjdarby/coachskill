@@ -11,7 +11,8 @@ type ClaimColumn = typeof signups.balanceRequestSentAt | typeof signups.balanceR
 
 /**
  * Marks the email as sent before sending, so overlapping runs can't double-send.
- * A failed send is un-marked so the next run retries it.
+ * If it wasn't actually sent (failed, or email not configured yet) it's un-marked,
+ * so it goes out on a later run once email works.
  */
 async function claimAndSend(id: number, column: ClaimColumn, send: () => Promise<SendResult>) {
   const db = getDb();
@@ -23,7 +24,7 @@ async function claimAndSend(id: number, column: ClaimColumn, send: () => Promise
     .run();
   if (claimed.changes !== 1) return false;
   const result = await send();
-  if (!result.ok && result.reason === "failed") {
+  if (!result.ok) {
     db.update(signups).set({ [key]: null }).where(eq(signups.id, id)).run();
     return false;
   }
