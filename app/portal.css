@@ -807,12 +807,9 @@ header.pt-topbar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  justify-content: center;
+  min-height: calc(100vh - 89px);
   padding: 40px 20px;
-}
-
-.pt-auth-logo {
-  margin-bottom: 32px;
 }
 
 .pt-auth-card {
@@ -856,6 +853,46 @@ header.pt-topbar {
   align-items: center;
   gap: 16px;
   margin-top: 20px;
+}
+
+/* Mobile: fill the screen like the public pages — form centred, footer link anchored at the bottom */
+@media (max-width: 767px) {
+  .pt-auth {
+    min-height: calc(100vh - var(--header-h, 61px));
+    min-height: calc(100svh - var(--header-h, 61px));
+    justify-content: flex-start;
+    padding: 20px 20px 24px;
+  }
+
+  .pt-auth-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  .pt-auth-card h1 {
+    margin-top: auto;
+    font-size: 2.25rem;
+  }
+
+  .pt-auth-card > :last-child {
+    margin-bottom: auto;
+  }
+
+  .pt-auth-card > .pt-auth-foot {
+    margin-top: auto;
+    margin-bottom: 0;
+    padding-top: 32px;
+  }
+
+  .pt-auth-card .pt-form .pt-btn {
+    padding: 15px 18px;
+  }
 }
 
 /* Modal */
