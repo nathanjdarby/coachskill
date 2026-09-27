@@ -1,5 +1,9 @@
 import { DiscoveryActions, Disclosure } from "@/components/admin/ClientForms";
+import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/DiscoveryScheduling";
+import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
+import { availableSlots, groupSlotsByDay } from "@/lib/booking";
 import { requireAdmin } from "@/lib/dal";
+import { durationFor, listEventTypes } from "@/lib/event-types";
 import { personaLabel } from "@/lib/discovery";
 import { listDiscoveryCallsWithClients } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
@@ -7,14 +11,22 @@ import { formatDateTime } from "@/lib/time";
 export default async function AdminDiscoveryPage() {
   await requireAdmin();
   const rows = await listDiscoveryCallsWithClients();
+  const scheduling = await schedulingForDiscovery(rows.map((r) => r.call.id));
+  // Types Monika can send to prospects, with her free times for each.
+  const types: SchedulingType[] = listEventTypes({ activeOnly: true })
+    .filter((t) => t.audience === "invite_only")
+    .map((t) => {
+      const minutes = durationFor(t);
+      return { id: t.id, label: t.name, minutes, days: groupSlotsByDay(availableSlots(minutes, { bufferMinutes: t.bufferMinutes })) };
+    });
 
   return (
     <div className="pt-page">
       <div className="pt-page-head">
         <h1>Discovery requests</h1>
         <p className="pt-muted">
-          Answers from the discovery call form, newest first. When you decide to work with someone, add them as a client,
-          then invite them to create an account — it&apos;s linked to everything they told you here.
+          Answers from the discovery call form, newest first. Schedule a call yourself or email a link so they can pick
+          a time. When you decide to work with someone, add them as a client — their calls and answers move across.
         </p>
       </div>
 
@@ -22,13 +34,18 @@ export default async function AdminDiscoveryPage() {
         <p className="pt-muted">No discovery requests yet.</p>
       ) : (
         <div className="pt-stack">
-          {rows.map(({ call, clientId }) => (
+          {rows.map(({ call, clientId }) => {
+            const { appointments, link } = scheduling.get(call.id) ?? { appointments: [], link: null };
+            const nextCall = appointments.find((a) => isUpcoming(a));
+            return (
             <Disclosure key={call.id} id={`request-${call.id}`} className="pt-card pt-details" defaultOpen={!clientId && !call.declinedAt}>
               <summary>
                 <span className="pt-details-title">{call.fullName}</span>
                 <span className="pt-muted pt-small">
                   {call.company} · {personaLabel(call.persona)}
                 </span>
+                {nextCall && <span className="pt-badge is-info">Call {formatDateTime(nextCall.startsAt)}</span>}
+                {!nextCall && link && <span className="pt-badge is-info">Link sent</span>}
                 {clientId ? (
                   <span className="pt-badge is-ok">Client</span>
                 ) : call.declinedAt ? (
@@ -52,6 +69,24 @@ export default async function AdminDiscoveryPage() {
                 <dt>Anything else</dt>
                 <dd>{call.anythingElse || <span className="pt-muted">—</span>}</dd>
               </dl>
+              {!call.declinedAt && (
+                <DiscoveryScheduling
+                  discoveryCallId={call.id}
+                  firstName={call.fullName.split(/\s+/)[0]}
+                  types={types}
+                  appointments={appointments.map((a) => ({
+                    id: a.id,
+                    title: a.title,
+                    startsAt: a.startsAt,
+                    durationMinutes: a.durationMinutes,
+                    meetingUrl: a.meetingUrl,
+                    cancelledAt: a.cancelledAt,
+                    upcoming: isUpcoming(a),
+                    colour: a.typeColour,
+                  }))}
+                  link={link && { id: link.id, url: link.url, expiresAt: link.expiresAt }}
+                />
+              )}
               <div className="pt-details-actions">
                 <DiscoveryActions
                   discoveryCallId={call.id}
@@ -62,7 +97,8 @@ export default async function AdminDiscoveryPage() {
                 />
               </div>
             </Disclosure>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

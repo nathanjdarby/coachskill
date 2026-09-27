@@ -1,8 +1,9 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { appUrl } from "@/lib/app-url";
+import { manageUrl } from "@/lib/appointments";
 import { getDb } from "@/lib/db";
-import { clients, coachingSessions, users } from "@/lib/db/schema";
+import { clients, coachingSessions, users, type Appointment } from "@/lib/db/schema";
 import { emailAdminBooking, emailSessionBooked, emailSessionCancelled, emailSessionRescheduled } from "@/lib/email";
 import { icsAttachment } from "@/lib/ics";
 import { joinNote } from "@/lib/meeting";
@@ -10,22 +11,42 @@ import { adminEmails } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
 type Change = "booked" | "rescheduled" | "cancelled";
+export type Actor = "admin" | "client" | "invitee";
 
 /**
- * Emails the client (if they have an account) about a session change with a calendar
- * invite, and tells the admins when the client made the change themselves.
+ * Who hears about an appointment: the client's account if they have one, otherwise the
+ * invitee's email with their manage link. Null when there's nobody to email.
  */
-export async function notifySessionChange(sessionId: number, change: Change, actor: "admin" | "client") {
+export async function appointmentRecipient(appointment: Appointment) {
+  if (appointment.clientId) {
+    const [account] = await getDb().select().from(users).where(eq(users.clientId, appointment.clientId)).limit(1);
+    if (account) return { to: account.email, name: account.name, url: await appUrl("/portal/sessions"), guest: false };
+  }
+  if (appointment.inviteeEmail) {
+    return {
+      to: appointment.inviteeEmail,
+      name: appointment.inviteeName ?? appointment.inviteeEmail,
+      url: await manageUrl(appointment),
+      guest: true,
+    };
+  }
+  return null;
+}
+
+/**
+ * Emails the client or invitee about an appointment change with a calendar invite,
+ * and tells the admins when the client or invitee made the change themselves.
+ */
+export async function notifyAppointmentChange(sessionId: number, change: Change, actor: Actor) {
   const db = getDb();
   const [row] = await db
-    .select({ session: coachingSessions, client: clients })
+    .select({ session: coachingSessions, clientName: clients.fullName })
     .from(coachingSessions)
-    .innerJoin(clients, eq(coachingSessions.clientId, clients.id))
+    .leftJoin(clients, eq(coachingSessions.clientId, clients.id))
     .where(eq(coachingSessions.id, sessionId))
     .limit(1);
   if (!row) return;
-  const { session, client } = row;
-  const [account] = await db.select().from(users).where(eq(users.clientId, client.id)).limit(1);
+  const { session } = row;
   const organizerEmail = process.env.EMAIL_REPLY_TO?.trim() || undefined;
 
   const ics = icsAttachment({
@@ -39,15 +60,14 @@ export async function notifySessionChange(sessionId: number, change: Change, act
     organizerEmail,
   });
 
-  if (account) {
+  const recipient = await appointmentRecipient(session);
+  if (recipient) {
     const base = {
-      to: account.email,
-      name: account.name,
+      ...recipient,
       title: session.title,
       startsAt: session.startsAt,
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
-      url: await appUrl("/portal/sessions"),
       attachments: [ics],
     };
     if (change === "booked") await emailSessionBooked(base);
@@ -55,21 +75,31 @@ export async function notifySessionChange(sessionId: number, change: Change, act
     else await emailSessionCancelled({ ...base, byClient: actor === "client" });
   }
 
-  if (actor === "client") {
+  if (actor !== "admin") {
     const to = await adminEmails();
     if (to.length) {
+      const who = row.clientName ?? session.inviteeName ?? session.inviteeEmail ?? "Someone";
       const verb = change === "booked" ? "booked" : change === "rescheduled" ? "moved" : "cancelled";
+      const [url, buttonLabel] = session.clientId
+        ? [`/admin/clients/${session.clientId}#sessions`, "Open client"]
+        : session.discoveryCallId
+          ? [`/admin/discovery#request-${session.discoveryCallId}`, "Open request"]
+          : ["/admin/calendar", "Open calendar"];
       await emailAdminBooking({
         to,
-        subject: `${client.fullName} ${verb} a session`,
+        subject: `${who} ${verb} ${session.discoveryCallId && !session.clientId ? `a ${session.title.toLowerCase()}` : "a session"}`,
         lines: [
           `${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`,
           ...(session.meetingUrl && change !== "cancelled" ? [`Join: ${session.meetingUrl}`] : []),
           ...(change !== "cancelled" && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
         ],
-        url: await appUrl(`/admin/clients/${client.id}#sessions`),
+        url: await appUrl(url),
+        buttonLabel,
         attachments: [ics],
       });
     }
   }
 }
+
+/** Older name, used by the portal booking actions. */
+export const notifySessionChange = notifyAppointmentChange;

@@ -227,7 +227,7 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   inviteeEmail: text("invitee_email"),
   locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person"] }).notNull().default("custom"),
   locationText: text("location_text"),
-  /** Hash of the token in a prospect's manage link (/appointments/<token>). */
+  /** Random secret signed into a prospect's manage link (/appointments/<token>); replacing it revokes old links. */
   manageTokenHash: text("manage_token_hash").unique(),
   notes: text("notes"),
   /** The package this session uses a credit from, if any. */
@@ -236,16 +236,34 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   meetingUrl: text("meeting_url"),
-  bookedBy: text("booked_by", { enum: ["admin", "client"] }).notNull().default("admin"),
+  bookedBy: text("booked_by", { enum: ["admin", "client", "invitee"] }).notNull().default("admin"),
   /** Cancelled sessions stay for the record but free the slot and the package credit. */
   cancelledAt: integer("cancelled_at", { mode: "timestamp_ms" }),
-  cancelledBy: text("cancelled_by", { enum: ["admin", "client"] }),
+  cancelledBy: text("cancelled_by", { enum: ["admin", "client", "invitee"] }),
   reminder24hSentAt: integer("reminder_24h_sent_at", { mode: "timestamp_ms" }),
   reminder1hSentAt: integer("reminder_1h_sent_at", { mode: "timestamp_ms" }),
   /** Bumped on every change so calendar apps update the existing event. */
   icsSequence: integer("ics_sequence").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+});
+
+/** Single-use links Monika sends a prospect so they can pick a time for a call (/book/<token>). */
+export const bookingLinks = sqliteTable("booking_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Random secret signed into the link; see lib/signed-links.ts. */
+  secret: text("secret").notNull(),
+  eventTypeId: integer("event_type_id")
+    .notNull()
+    .references(() => eventTypes.id),
+  discoveryCallId: integer("discovery_call_id").references(() => discoveryCalls.id),
+  inviteeName: text("invitee_name").notNull(),
+  inviteeEmail: text("invitee_email").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  usedAt: integer("used_at", { mode: "timestamp_ms" }),
+  appointmentId: integer("appointment_id").references(() => coachingSessions.id),
+  revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
 /** Weekly bookable hours (London time), e.g. Monday 09:00–17:00. */
@@ -332,5 +350,6 @@ export type BookingSettings = typeof bookingSettings.$inferSelect;
 export type EventType = typeof eventTypes.$inferSelect;
 /** Sessions, discovery calls and other bookings all live in coaching_sessions. */
 export type Appointment = CoachingSession;
+export type BookingLink = typeof bookingLinks.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceShare = typeof resourceShares.$inferSelect;

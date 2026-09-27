@@ -177,7 +177,14 @@ type SessionEmail = {
   url: string;
   meetingUrl?: string | null;
   attachments?: EmailAttachment[];
+  /** A prospect without a client account: `url` is their manage link. */
+  guest?: boolean;
 };
+
+/** Clients know them as sessions; prospects see the call's own name. */
+const subjectName = (s: SessionEmail) => (s.guest ? s.title : "Session");
+
+const viewButton = (s: SessionEmail) => ({ label: s.guest ? "View or change your booking" : "View in your client area", url: s.url });
 
 function sessionLine(s: SessionEmail) {
   return `${s.title} — ${formatDateTime(s.startsAt)} (UK time), ${s.durationMinutes} minutes.`;
@@ -194,10 +201,10 @@ const CALENDAR_NOTE = "The attached invite adds it to your calendar.";
 export function emailSessionBooked(input: SessionEmail) {
   return sendEmail({
     to: input.to,
-    subject: `Session booked: ${formatDateTime(input.startsAt)}`,
-    heading: `Hi ${firstName(input.name)}, our next session is booked`,
+    subject: `${subjectName(input)} booked: ${formatDateTime(input.startsAt)}`,
+    heading: input.guest ? `Hi ${firstName(input.name)}, you're booked in` : `Hi ${firstName(input.name)}, our next session is booked`,
     paragraphs: [sessionLine(input), ...meetingLine(input)],
-    button: { label: "View in your client area", url: input.url },
+    button: viewButton(input),
     footnote: input.attachments?.length ? CALENDAR_NOTE : undefined,
     attachments: input.attachments,
   });
@@ -206,10 +213,10 @@ export function emailSessionBooked(input: SessionEmail) {
 export function emailSessionRescheduled(input: SessionEmail) {
   return sendEmail({
     to: input.to,
-    subject: `Session moved to ${formatDateTime(input.startsAt)}`,
+    subject: `${subjectName(input)} moved to ${formatDateTime(input.startsAt)}`,
     heading: `Hi ${firstName(input.name)}, our session has moved`,
     paragraphs: [`The new time is: ${sessionLine(input)}`, ...meetingLine(input)],
-    button: { label: "View in your client area", url: input.url },
+    button: viewButton(input),
     footnote: input.attachments?.length ? "The attached invite updates the event in your calendar." : undefined,
     attachments: input.attachments,
   });
@@ -218,15 +225,17 @@ export function emailSessionRescheduled(input: SessionEmail) {
 export function emailSessionCancelled(input: SessionEmail & { byClient: boolean }) {
   return sendEmail({
     to: input.to,
-    subject: `Session cancelled: ${formatDateTime(input.startsAt)}`,
+    subject: `${subjectName(input)} cancelled: ${formatDateTime(input.startsAt)}`,
     heading: `Hi ${firstName(input.name)}, our session is cancelled`,
     paragraphs: [
       `This session has been cancelled: ${sessionLine(input)}`,
-      input.byClient
-        ? "The session has gone back into your package, so you can book another time whenever suits you."
-        : "If it came from your package, the session has been returned so you can book another time.",
+      input.guest
+        ? "If you'd like to find another time, just reply to this email."
+        : input.byClient
+          ? "The session has gone back into your package, so you can book another time whenever suits you."
+          : "If it came from your package, the session has been returned so you can book another time.",
     ],
-    button: { label: "Book another time", url: input.url },
+    button: input.guest ? undefined : { label: "Book another time", url: input.url },
     attachments: input.attachments,
   });
 }
@@ -238,18 +247,41 @@ export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | 
     heading: input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
     paragraphs: [sessionLine(input), ...(joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : [])],
     button: input.meetingUrl ? { label: "Join the session", url: input.meetingUrl } : { label: "View in your client area", url: input.url },
-    footnote: "Need to change it? You can reschedule from your client area.",
+    footnote: input.guest
+      ? `Need to change it? Use your booking page: ${input.url}`
+      : "Need to change it? You can reschedule from your client area.",
   });
 }
 
-export function emailAdminBooking(input: { to: string[]; subject: string; lines: string[]; url: string; attachments?: EmailAttachment[] }) {
+export function emailAdminBooking(input: {
+  to: string[];
+  subject: string;
+  lines: string[];
+  url: string;
+  buttonLabel?: string;
+  attachments?: EmailAttachment[];
+}) {
   return sendEmail({
     to: input.to,
     subject: input.subject,
     heading: input.subject,
     paragraphs: input.lines,
-    button: { label: "Open client", url: input.url },
+    button: { label: input.buttonLabel ?? "Open client", url: input.url },
     attachments: input.attachments,
+  });
+}
+
+export function emailBookingLink(input: { to: string; name: string; typeName: string; durationMinutes: number; url: string; expiresAt: Date }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Pick a time for your ${input.typeName.toLowerCase()} with Monika`,
+    heading: `Hi ${firstName(input.name)}, let's find a time to talk`,
+    paragraphs: [
+      `Thanks for getting in touch. Choose a time that suits you for a ${input.durationMinutes}-minute ${input.typeName.toLowerCase()} — it's a video call, and you'll get the link as soon as you've booked.`,
+      "All times are shown in UK time.",
+    ],
+    button: { label: "Choose a time", url: input.url },
+    footnote: `This link is just for you, works once and expires on ${formatDateTime(input.expiresAt)}. If none of the times suit, reply and we'll sort something out.`,
   });
 }
 

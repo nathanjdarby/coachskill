@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
-import { coachingSessions, eventTypes } from "@/lib/db/schema";
+import { bookingLinks, coachingSessions, eventTypes } from "@/lib/db/schema";
 import { COACHING_SLUG, DISCOVERY_SLUG } from "@/lib/event-types";
 import type { FormState } from "./types";
 
@@ -91,7 +91,8 @@ export async function deleteEventType(id: number) {
   const type = db.select().from(eventTypes).where(eq(eventTypes.id, id)).get();
   if (!type || BUILT_IN.includes(type.slug)) return;
   const used = db.select({ n: sql<number>`count(*)` }).from(coachingSessions).where(eq(coachingSessions.eventTypeId, id)).get();
-  if ((used?.n ?? 0) > 0) db.update(eventTypes).set({ active: false, updatedAt: new Date() }).where(eq(eventTypes.id, id)).run();
+  const linked = db.select({ n: sql<number>`count(*)` }).from(bookingLinks).where(eq(bookingLinks.eventTypeId, id)).get();
+  if ((used?.n ?? 0) + (linked?.n ?? 0) > 0) db.update(eventTypes).set({ active: false, updatedAt: new Date() }).where(eq(eventTypes.id, id)).run();
   else db.delete(eventTypes).where(eq(eventTypes.id, id)).run();
   revalidateTypes();
 }

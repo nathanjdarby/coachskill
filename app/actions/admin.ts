@@ -3,12 +3,13 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { ensureClientUser, findUserByEmail, issuePasswordToken } from "@/lib/accounts";
 import { appUrl } from "@/lib/app-url";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import {
+  bookingLinks,
   clientNotes,
   clientPackages,
   clients,
@@ -123,6 +124,11 @@ export async function becomeClient(discoveryCallId: number): Promise<FormState> 
         discoveryCallId: call.id,
       });
   if ("error" in created) return { ok: false, message: created.error };
+  // Their discovery calls now show on the client page (and in the portal once they sign up).
+  await db
+    .update(coachingSessions)
+    .set({ clientId: created.client.id })
+    .where(and(eq(coachingSessions.discoveryCallId, call.id), isNull(coachingSessions.clientId)));
 
   revalidatePath("/admin/discovery");
   revalidateClient(created.client.id);
@@ -152,7 +158,12 @@ export async function deleteDiscoveryCall(discoveryCallId: number): Promise<Form
   if (client) {
     return { ok: false, message: `This request is linked to ${client.fullName}'s client record, so it can't be deleted.` };
   }
-  await db.delete(discoveryCalls).where(eq(discoveryCalls.id, discoveryCallId));
+  db.transaction(() => {
+    // Calls stay on the calendar as records; open booking links go with the request.
+    db.update(coachingSessions).set({ discoveryCallId: null }).where(eq(coachingSessions.discoveryCallId, discoveryCallId)).run();
+    db.delete(bookingLinks).where(eq(bookingLinks.discoveryCallId, discoveryCallId)).run();
+    db.delete(discoveryCalls).where(eq(discoveryCalls.id, discoveryCallId)).run();
+  });
   revalidatePath("/admin/discovery");
   revalidatePath("/admin", "layout");
   return { ok: true };
@@ -318,10 +329,21 @@ export async function addSession(clientId: number, _state: FormState, formData: 
 
 export async function deleteSession(sessionId: number, clientId: number) {
   await requireAdmin();
-  await getDb()
-    .delete(coachingSessions)
-    .where(and(eq(coachingSessions.id, sessionId), eq(coachingSessions.clientId, clientId)));
+  const db = getDb();
+  db.transaction(() => {
+    const session = db
+      .select({ id: coachingSessions.id })
+      .from(coachingSessions)
+      .where(and(eq(coachingSessions.id, sessionId), eq(coachingSessions.clientId, clientId)))
+      .get();
+    if (!session) return;
+    // A booking link that created it keeps its "used" record.
+    db.update(bookingLinks).set({ appointmentId: null }).where(eq(bookingLinks.appointmentId, session.id)).run();
+    db.delete(coachingSessions).where(eq(coachingSessions.id, session.id)).run();
+  });
   revalidateClient(clientId);
+  revalidatePath("/admin/discovery");
+  revalidatePath("/admin/calendar");
 }
 
 export async function sendAdminMessage(clientId: number, _state: FormState, formData: FormData): Promise<FormState> {
@@ -363,6 +385,18 @@ export async function deleteClient(clientId: number, _state: FormState, formData
     const account = db.select({ id: users.id }).from(users).where(eq(users.clientId, clientId)).get();
     db.delete(messages).where(eq(messages.clientId, clientId)).run();
     db.delete(clientNotes).where(eq(clientNotes.clientId, clientId)).run();
+    // Discovery calls go back to being the prospect's (kept with the request); other sessions go.
+    db.update(coachingSessions)
+      .set({ clientId: null })
+      .where(and(eq(coachingSessions.clientId, clientId), isNotNull(coachingSessions.discoveryCallId)))
+      .run();
+    const doomed = db.select({ id: coachingSessions.id }).from(coachingSessions).where(eq(coachingSessions.clientId, clientId)).all();
+    if (doomed.length) {
+      db.update(bookingLinks)
+        .set({ appointmentId: null })
+        .where(inArray(bookingLinks.appointmentId, doomed.map((d) => d.id)))
+        .run();
+    }
     db.delete(coachingSessions).where(eq(coachingSessions.clientId, clientId)).run();
     db.delete(clientPackages).where(eq(clientPackages.clientId, clientId)).run();
     db.delete(resourceShares).where(eq(resourceShares.clientId, clientId)).run();

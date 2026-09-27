@@ -1,9 +1,9 @@
 import "server-only";
 import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
-import { appUrl } from "@/lib/app-url";
 import { getDb } from "@/lib/db";
-import { coachingSessions, users } from "@/lib/db/schema";
+import { coachingSessions } from "@/lib/db/schema";
 import { emailSessionReminder } from "@/lib/email";
+import { appointmentRecipient } from "@/lib/session-notify";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -20,9 +20,8 @@ async function sendReminders(now: Date, window: Window) {
   const horizon = new Date(now.getTime() + (window === "24h" ? 24 : 1) * HOUR);
 
   const due = await db
-    .select({ session: coachingSessions, email: users.email, name: users.name })
+    .select()
     .from(coachingSessions)
-    .innerJoin(users, eq(users.clientId, coachingSessions.clientId))
     .where(
       and(
         isNull(coachingSessions.cancelledAt),
@@ -37,9 +36,11 @@ async function sendReminders(now: Date, window: Window) {
       ),
     );
 
-  const url = await appUrl("/portal/sessions");
   let sent = 0;
-  for (const { session, email, name } of due) {
+  for (const session of due) {
+    // Clients with an account, or prospects booked by email.
+    const recipient = await appointmentRecipient(session);
+    if (!recipient) continue;
     const claimed = db
       .update(coachingSessions)
       .set({ [key]: new Date() })
@@ -47,13 +48,11 @@ async function sendReminders(now: Date, window: Window) {
       .run();
     if (claimed.changes !== 1) continue;
     const result = await emailSessionReminder({
-      to: email,
-      name,
+      ...recipient,
       title: session.title,
       startsAt: session.startsAt,
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
-      url,
       when: window === "1h" ? "soon" : "tomorrow",
     });
     if (!result.ok) {

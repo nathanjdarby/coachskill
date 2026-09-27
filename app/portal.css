@@ -2187,3 +2187,113 @@ fieldset.pt-field {
     font-size: 0.8125rem;
   }
 }
+
+/* — Discovery scheduling (admin) — */
+
+.ds {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 22px 18px;
+}
+
+.ds-appts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ds-appts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  border-radius: 12px;
+}
+
+.ds-appts li.is-cancelled {
+  opacity: 0.55;
+}
+
+.ds-appts li.is-cancelled .ds-appt-title {
+  text-decoration: line-through;
+}
+
+.ds-appt-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ds-appt-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ds-appt-main p {
+  margin: 0;
+}
+
+.ds-appt-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ds-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.ds-link p {
+  margin: 0;
+}
+
+.ds-form {
+  max-width: 460px;
+}
+
+/* — Public appointment and booking pages — */
+
+.pt-auth-card.is-wide {
+  max-width: 560px;
+}
+
+.pt-appt {
+  margin: 20px 0;
+}
+
+.pt-strike {
+  text-decoration: line-through;
+}
+
+.pt-appt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+@media (max-width: 640px) {
+  .ds {
+    padding: 0 16px 16px;
+  }
+
+  .ds-appts li {
+    flex-wrap: wrap;
+  }
+
+  .ds-appt-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

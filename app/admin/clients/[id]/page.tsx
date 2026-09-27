@@ -1,3 +1,4 @@
+import type { Appointment } from "@/lib/db/schema";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteNote, deleteSession, sendAdminMessage } from "@/app/actions/admin";
@@ -273,8 +274,8 @@ function SessionList({
     meetingUrl: string | null;
     clientPackageId: number | null;
     cancelledAt: Date | null;
-    cancelledBy: "admin" | "client" | null;
-    bookedBy: "admin" | "client";
+    cancelledBy: Appointment["cancelledBy"];
+    bookedBy: Appointment["bookedBy"];
   }[];
   clientId: number;
   packageNames: Map<number, string>;
@@ -286,8 +287,8 @@ function SessionList({
           <div>
             <p className="pt-session-title">{s.title}</p>
             <p className="pt-muted pt-small">
-              {s.cancelledAt && `Cancelled by ${s.cancelledBy === "client" ? "client" : "you"} · `}
-              {!s.cancelledAt && s.bookedBy === "client" && "Booked by client · "}
+              {s.cancelledAt && `Cancelled by ${s.cancelledBy === "admin" ? "you" : "client"} · `}
+              {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
               {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
               {s.meetingUrl && (

@@ -71,6 +71,13 @@
       "when": 1790534947296,
       "tag": "0009_open_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1790537580841,
+      "tag": "0010_fearless_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

@@ -31,11 +31,11 @@ export function FormMessage({ state }: { state: FormState }) {
   );
 }
 
-export function CopyLink({ link }: { link: string }) {
+export function CopyLink({ link, label = "Account link" }: { link: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="pt-copy">
-      <input readOnly value={link} aria-label="Account link" onFocus={(e) => e.currentTarget.select()} />
+      <input readOnly value={link} aria-label={label} onFocus={(e) => e.currentTarget.select()} />
       <button
         type="button"
         className="pt-btn pt-btn-secondary"
