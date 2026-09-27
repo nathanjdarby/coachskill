@@ -11,13 +11,13 @@ export default async function PortalMessagesPage() {
   const thread = await listMessages(user.clientId);
 
   return (
-    <div className="pt-page pt-narrow">
+    <div className="pt-page pt-narrow pt-messages-page">
       <AutoRefresh seconds={20} />
       <div className="pt-page-head">
         <h1>Messages</h1>
         <p className="pt-muted">A private conversation between you and Monika.</p>
       </div>
-      <section className="pt-card">
+      <section className="pt-card pt-messages-card">
         <MessageThread
           emptyText="No messages yet. Say hello, or ask anything between sessions."
           messages={thread.map((m) => ({
@@ -28,7 +28,7 @@ export default async function PortalMessagesPage() {
             sentAt: formatDateTime(m.message.createdAt),
           }))}
         />
-        <MessageComposer action={sendClientMessage} placeholder="Write a message to Monika…" />
+        <MessageComposer action={sendClientMessage} placeholder="Message Monika…" />
       </section>
     </div>
   );

@@ -34,6 +34,7 @@ header.pt-topbar {
   align-items: center;
   gap: 10px;
   text-decoration: none;
+  color: var(--text-primary);
 }
 
 .pt-brand-tag {
@@ -978,4 +979,240 @@ header.pt-topbar {
   margin-right: 10px;
   color: var(--accent-cyan);
   font-weight: 700;
+}
+
+/* ==========================================================================
+   Client portal: app layout on mobile
+   ========================================================================== */
+
+.pt-tab-icon,
+.pt-mobile-only {
+  display: none;
+}
+
+.pt-btn-block {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .pt-desktop-only {
+    display: none;
+  }
+
+  .pt-mobile-only {
+    display: block;
+  }
+
+  /* Shell fills the screen: top bar, scrolling content, fixed tab bar */
+  .pt-shell-portal {
+    --tabbar-h: 64px;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pt-shell-portal header.pt-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--header-h, 61px);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    /* Solid, not blurred: backdrop-filter would trap the fixed tab bar inside the header */
+    background: var(--bg-deep);
+    backdrop-filter: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .pt-shell-portal .pt-topbar-row {
+    width: 100%;
+  }
+
+  .pt-shell-portal .pt-brand {
+    gap: 8px;
+    color: var(--text-primary);
+  }
+
+  .pt-shell-portal .pt-user .pt-nav-link {
+    padding: 6px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    font-size: 0.875rem;
+  }
+
+  .pt-shell-portal .pt-user .pt-nav-link.is-active {
+    border-color: rgba(34, 211, 238, 0.5);
+  }
+
+  /* Bottom tab bar */
+  .pt-shell-portal .pt-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    max-width: none;
+    margin: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    overflow: visible;
+    background: rgba(10, 15, 26, 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .pt-shell-portal .pt-tabbar .pt-nav-link {
+    position: relative;
+    height: var(--tabbar-h);
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 0;
+    border-bottom: none;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+  }
+
+  .pt-shell-portal .pt-tabbar .pt-nav-link.is-active {
+    color: var(--accent-cyan);
+  }
+
+  .pt-shell-portal .pt-tab-icon {
+    display: block;
+  }
+
+  .pt-shell-portal .pt-tabbar .pt-nav-count {
+    position: absolute;
+    top: 8px;
+    left: calc(50% + 6px);
+    min-width: 18px;
+    padding: 0 5px;
+    font-size: 0.6875rem;
+    line-height: 18px;
+  }
+
+  .pt-shell-portal .pt-main {
+    flex: 1;
+    width: 100%;
+    padding-top: 20px;
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px);
+  }
+
+  /* Tighter cards and headings */
+  .pt-shell-portal .pt-page {
+    gap: 14px;
+  }
+
+  .pt-shell-portal .pt-columns {
+    gap: 14px;
+  }
+
+  .pt-shell-portal .pt-card {
+    padding: 18px;
+  }
+
+  .pt-shell-portal .pt-page-head h1 {
+    font-size: 1.875rem;
+  }
+
+  .pt-shell-portal .pt-page-head {
+    margin-bottom: 4px;
+  }
+
+  .pt-shell-portal .pt-card > .pt-btn,
+  .pt-shell-portal .pt-card .pt-form > .pt-btn {
+    width: 100%;
+    padding: 13px 18px;
+  }
+
+  .pt-shell-portal .pt-session .pt-btn {
+    flex: none;
+    padding: 9px 16px;
+  }
+
+  /* Messages: a full-screen chat — thread scrolls, composer sits above the tab bar */
+  .pt-shell-portal:has(.pt-messages-page) {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  .pt-shell-portal:has(.pt-messages-page) .pt-main {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
+  }
+
+  .pt-messages-page {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pt-messages-page .pt-page-head > .pt-muted {
+    display: none;
+  }
+
+  .pt-messages-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .pt-messages-card .pt-thread {
+    flex: 1;
+    max-height: none;
+    min-height: 0;
+  }
+
+  .pt-messages-card .pt-thread-empty {
+    flex: 1;
+  }
+
+  .pt-messages-card .pt-bubble {
+    max-width: 85%;
+  }
+
+  .pt-messages-card .pt-composer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .pt-messages-card .pt-composer textarea {
+    height: 48px;
+    min-height: 48px;
+    max-height: 140px;
+    padding: 12px 14px;
+    resize: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .pt-messages-card .pt-composer-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .pt-messages-card .pt-composer-actions .pt-small {
+    display: none;
+  }
+
+  .pt-messages-card .pt-composer .pt-btn {
+    width: auto;
+    height: 48px;
+  }
+
+  .pt-messages-card .pt-composer > :not(textarea):not(.pt-composer-actions):not(label) {
+    grid-column: 1 / -1;
+  }
 }

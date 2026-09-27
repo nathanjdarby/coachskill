@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { logout } from "@/app/actions/auth";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { MIN_PASSWORD_LENGTH } from "@/lib/accounts";
 import { requireClient } from "@/lib/dal";
@@ -30,6 +31,12 @@ export default async function PortalAccountPage() {
         <h2>Change password</h2>
         <ChangePasswordForm email={user.email} minLength={MIN_PASSWORD_LENGTH} />
       </section>
+      {/* On mobile the top bar has no room for Sign out, so it lives here */}
+      <form action={logout} className="pt-mobile-only">
+        <button type="submit" className="pt-btn pt-btn-secondary pt-btn-block">
+          Sign out
+        </button>
+      </form>
     </div>
   );
 }
