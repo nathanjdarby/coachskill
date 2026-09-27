@@ -2429,8 +2429,20 @@ header.onb-header {
     --header-h: 61px;
   }
 
-  header {
-    padding: 14px 0;
+  header:not(.onb-header) {
+    height: var(--header-h);
+    padding: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  header .container {
+    width: 100%;
+  }
+
+  /* Discovery form: leave room for save state + "Finish later" once questions start */
+  .onb-header-row:has(.onb-header-meta) .header-wordmark {
+    display: none;
   }
 
   .logo {
@@ -2878,18 +2890,51 @@ header.onb-header {
     margin-top: 4px;
   }
 
-  /* Workshop hero: headline and button first, poster after */
-  .hero-grid {
-    gap: 28px;
+  /* Workshop hero fills the first screen: poster, headline, CTA anchored at the bottom */
+  .workshop-hero {
+    min-height: calc(100vh - var(--header-h, 61px));
+    min-height: calc(100svh - var(--header-h, 61px));
+    display: flex;
+    padding: 20px 0 24px;
   }
 
-  .hero-grid .hero-content {
-    order: -1;
+  .workshop-hero > .container {
+    width: 100%;
+    display: flex;
   }
 
-  .poster-frame {
-    max-width: 320px;
-    margin: 0 auto;
+  .workshop-hero .hero-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+  }
+
+  .workshop-hero .hero-content {
+    display: contents;
+  }
+
+  .workshop-hero .poster-frame {
+    margin: auto auto 24px;
+    padding: 6px;
+  }
+
+  .workshop-hero .poster-frame img {
+    height: clamp(200px, 38svh, 360px) !important;
+    width: auto !important;
+  }
+
+  .workshop-hero .hero-title {
+    margin-bottom: 12px;
+  }
+
+  .workshop-hero .cta-hero {
+    margin-top: auto;
+  }
+
+  .workshop-hero .subtitle {
+    margin-bottom: 24px;
   }
 
   /* Benefits: icon sits beside the title instead of above it */
@@ -3182,5 +3227,20 @@ header.onb-header {
 
   .home-hero-actions {
     padding-top: 20px;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 700px) {
+  .workshop-hero .poster-frame img {
+    height: 30svh !important;
+  }
+
+  .workshop-hero .poster-frame {
+    margin-bottom: 16px;
+  }
+
+  .workshop-hero .subtitle {
+    font-size: 0.9375rem;
+    margin-bottom: 16px;
   }
 }

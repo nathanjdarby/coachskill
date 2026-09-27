@@ -3,7 +3,7 @@ import { SecurePlaceButton } from "./SecurePlaceButton";
 
 export function Hero() {
   return (
-    <section className="hero">
+    <section className="hero workshop-hero">
       <div className="container">
         <div className="hero-grid">
           <div className="poster-frame">
