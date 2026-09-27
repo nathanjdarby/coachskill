@@ -24,3 +24,10 @@ export function getStripe() {
 
 /** What a Checkout Session pays for; stored in its metadata and used by the webhook. */
 export type CheckoutKind = "workshop_deposit" | "workshop_balance" | "package";
+
+/**
+ * Standard Stripe payments rather than Managed Payments (Stripe as merchant of record),
+ * which new accounts get by default and which needs product tax codes. Not yet in the
+ * SDK's types, so it's added here and spread into every Checkout Session.
+ */
+export const STANDARD_PAYMENTS = { managed_payments: { enabled: false } } as unknown as Partial<Stripe.Checkout.SessionCreateParams>;

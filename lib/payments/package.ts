@@ -7,7 +7,7 @@ import { clientPackages, clients, type Package } from "@/lib/db/schema";
 import { emailAdminPayment, emailPackagePurchased } from "@/lib/email";
 import { formatPence } from "@/lib/money";
 import { adminEmails } from "@/lib/portal";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, STANDARD_PAYMENTS } from "@/lib/stripe";
 
 /** Creates a pending purchase and a Stripe Checkout for it; returns the Checkout URL. */
 export async function createPackageCheckout(input: { clientId: number; email: string; pkg: Package }) {
@@ -32,8 +32,8 @@ export async function createPackageCheckout(input: { clientId: number; email: st
   let session: Stripe.Checkout.Session;
   try {
     session = await getStripe().checkout.sessions.create({
+      ...STANDARD_PAYMENTS,
       mode: "payment",
-      payment_method_types: ["card"],
       customer_email: email,
       line_items: [
         {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getWorkshopBySlug } from "@/lib/db/queries";
 import type { Workshop } from "@/lib/db/schema";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, STANDARD_PAYMENTS } from "@/lib/stripe";
 import { featuredWorkshop, seatsTaken } from "@/lib/workshops";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
           ];
 
     const session = await getStripe().checkout.sessions.create({
+      ...STANDARD_PAYMENTS,
       mode: "payment",
-      payment_method_types: ["card"],
       line_items: lineItems,
       customer_email: email.trim(),
       client_reference_id: name.trim(),

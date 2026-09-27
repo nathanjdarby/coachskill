@@ -8,7 +8,7 @@ import { signups, workshops, type Signup, type Workshop } from "@/lib/db/schema"
 import { emailAdminPayment, emailBalancePaid, emailDepositConfirmed } from "@/lib/email";
 import { formatPence } from "@/lib/money";
 import { adminEmails } from "@/lib/portal";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, STANDARD_PAYMENTS } from "@/lib/stripe";
 import { balanceToken, seatsTaken } from "@/lib/workshops";
 
 function info(w: Workshop) {
@@ -121,8 +121,8 @@ export async function createBalanceCheckout(signup: Signup, workshop: Workshop) 
   const stripe = getStripe();
   const back = await appUrl("/workshop");
   const session = await stripe.checkout.sessions.create({
+    ...STANDARD_PAYMENTS,
     mode: "payment",
-    payment_method_types: ["card"],
     customer_email: signup.email,
     line_items: [
       {
