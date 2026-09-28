@@ -17,7 +17,7 @@ import { getProgrammeBySlug, programmeImageUrl } from "@/lib/workshops";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ date?: string }> };
 
 /** Published workshops for everyone; drafts only for the admin, as a preview. */
 async function loadProgramme(slug: string) {
@@ -35,13 +35,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${p.title} | Coach Skill`, description: p.summary || p.intro.slice(0, 160) };
 }
 
-export default async function WorkshopPage({ params }: Props) {
+export default async function WorkshopPage({ params, searchParams }: Props) {
   const loaded = await loadProgramme((await params).slug);
   if (!loaded) notFound();
   const { programme: p, preview } = loaded;
 
   const offers = p.upcoming.map(toOffer);
-  const featured = offers.length ? firstBookable(offers) : null;
+  const { date } = await searchParams;
+  // The date chosen on the listing leads the hero, if it's still bookable.
+  const featured = offers.find((o) => o.slug === date && o.seatsLeft !== 0) ?? (offers.length ? firstBookable(offers) : null);
   const outcomes = parsePoints(p.outcomesJson);
   return (
     <>
@@ -76,6 +78,7 @@ export default async function WorkshopPage({ params }: Props) {
           durationMinutes={featured?.durationMinutes ?? p.durationMinutes}
           highlights={parsePoints(p.highlightsJson)}
           enquireHref="/discovery-call"
+          initialSlug={date}
         />
         {p.showTeamSection && (
           <>

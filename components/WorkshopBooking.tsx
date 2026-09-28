@@ -10,12 +10,15 @@ import { placesLabel, type WorkshopOffer } from "@/lib/workshop-offer";
  * Pick a date, then pay. The date cards are the only place a date is chosen;
  * the pay button stays disabled until one is selected.
  */
-export function WorkshopBooking({ offers }: { offers: WorkshopOffer[] }) {
+export function WorkshopBooking({ offers, initialSlug }: { offers: WorkshopOffer[]; initialSlug?: string }) {
   const { openCheckout } = useCheckout();
   const dated = offers.filter((o) => o.startsAt);
   const bookable = offers.filter((o) => o.seatsLeft !== 0);
   // A single bookable date (or the undated fallback) needs no choice.
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(bookable.length === 1 ? bookable[0].slug : null);
+  // A date picked on the listing arrives preselected.
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(
+    bookable.find((o) => o.slug === initialSlug)?.slug ?? (bookable.length === 1 ? bookable[0].slug : null),
+  );
   const selected = offers.find((o) => o.slug === selectedSlug && o.seatsLeft !== 0) ?? (dated.length === 0 ? offers[0] : null);
 
   const priceLabel = (key: "depositPence" | "balancePence") => {

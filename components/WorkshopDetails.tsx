@@ -12,11 +12,13 @@ export function WorkshopDetails({
   durationMinutes,
   highlights,
   enquireHref,
+  initialSlug,
 }: {
   offers: WorkshopOffer[];
   durationMinutes: number;
   highlights: WorkshopPoint[];
   enquireHref: string;
+  initialSlug?: string;
 }) {
   const items = [
     { title: hoursLabel(durationMinutes), description: "Focused and practical — you leave with skills you can use straight away." },
@@ -29,7 +31,7 @@ export function WorkshopDetails({
           Workshop <span>details</span>
         </h2>
         {offers.length > 0 ? (
-          <WorkshopBooking offers={offers} />
+          <WorkshopBooking offers={offers} initialSlug={initialSlug} />
         ) : (
           <div className="workshop-book" id="dates">
             <div className="payment-card">
