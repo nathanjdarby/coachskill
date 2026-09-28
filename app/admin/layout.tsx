@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { NavLink } from "@/components/portal/NavLink";
 import { TabIcon } from "@/components/portal/TabIcon";
 import { requireAdmin } from "@/lib/dal";
@@ -22,7 +23,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
   const counts = await adminDashboardCounts();
   return (
-    <div className="pt-shell pt-shell-app">
+    <div className="pt-shell pt-shell-app pt-shell-admin">
+      <AdminSidebar name={admin.name.split(/\s+/)[0]} counts={counts} />
+      {/* Below desktop width: the top bar with tabs, and a bottom tab bar on phones */}
       <header className="pt-topbar">
         <div className="pt-topbar-row">
           <Link href="/admin" className="pt-brand">
@@ -44,6 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavLink href="/admin" exact>
             <TabIcon name="overview" />
             <span>Overview</span>
+            <Count n={counts.sessionRequests} label="session requests to approve" />
           </NavLink>
           <NavLink href="/admin/clients">
             <TabIcon name="clients" />
@@ -71,7 +75,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span>Resources</span>
           </NavLink>
           {/* Mobile has room for four tabs; the rest live under More. */}
-          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/workshops", "/admin/signups", "/admin/packages", "/admin/scheduling", "/admin/resources", "/admin/account"]} className="pt-mobile-flex">
+          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/workshops", "/admin/signups", "/admin/packages", "/admin/scheduling", "/admin/availability", "/admin/resources", "/admin/account"]} className="pt-mobile-flex">
             <TabIcon name="more" />
             <span>More</span>
             <Count n={counts.newDiscoveryRequests} label="new requests" />

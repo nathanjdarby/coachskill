@@ -82,7 +82,7 @@ export async function listSessionRequests() {
 export async function adminDashboardCounts() {
   const db = getDb();
   const weekAhead = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const [[active], [unread], [sessions], [newRequests]] = await Promise.all([
+  const [[active], [unread], [sessions], [newRequests], [sessionRequests]] = await Promise.all([
     db.select({ n: sql<number>`count(*)` }).from(clients).where(eq(clients.status, "active")),
     db.select({ n: sql<number>`count(*)` }).from(messages).where(unreadFor("admin")),
     db
@@ -100,12 +100,24 @@ export async function adminDashboardCounts() {
       .from(discoveryCalls)
       .leftJoin(clients, eq(clients.discoveryCallId, discoveryCalls.id))
       .where(and(isNull(clients.id), isNull(discoveryCalls.declinedAt))),
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(coachingSessions)
+      .where(
+        and(
+          eq(coachingSessions.awaitingApproval, true),
+          sql`${coachingSessions.approvedAt} is null`,
+          isNull(coachingSessions.cancelledAt),
+          gte(coachingSessions.startsAt, new Date()),
+        ),
+      ),
   ]);
   return {
     activeClients: active.n,
     unreadMessages: unread.n,
     sessionsThisWeek: sessions.n,
     newDiscoveryRequests: newRequests.n,
+    sessionRequests: sessionRequests.n,
   };
 }
 
