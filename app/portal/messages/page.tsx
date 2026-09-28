@@ -1,6 +1,7 @@
 import { sendClientMessage } from "@/app/actions/portal";
 import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
+import { PageHeader } from "@/components/portal/PageHeader";
 import { requireClient } from "@/lib/dal";
 import { listMessages, markMessagesRead } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
@@ -13,10 +14,7 @@ export default async function PortalMessagesPage() {
   return (
     <div className="pt-page pt-narrow pt-messages-page">
       <AutoRefresh seconds={20} />
-      <div className="pt-page-head">
-        <h1>Messages</h1>
-        <p className="pt-muted">A private conversation between you and Monika.</p>
-      </div>
+      <PageHeader eyebrow="From Monika" title="Messages" lead="A private conversation between you and Monika." />
       <section className="pt-card pt-messages-card">
         <MessageThread
           emptyText="No messages yet. Say hello, or ask anything between sessions."

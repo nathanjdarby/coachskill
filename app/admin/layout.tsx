@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
   const counts = await adminDashboardCounts();
   return (
-    <div className="pt-shell pt-shell-app pt-shell-admin">
+    <div className="pt-shell pt-shell-app pt-shell-sidebar">
       <AdminSidebar name={admin.name.split(/\s+/)[0]} counts={counts} />
       {/* Below desktop width: the top bar with tabs, and a bottom tab bar on phones */}
       <header className="pt-topbar">

@@ -1,25 +1,10 @@
-import Image from "next/image";
-import Link from "next/link";
-import { logout } from "@/app/actions/auth";
-import { NavLink } from "@/components/portal/NavLink";
-import { TabIcon, type IconName } from "@/components/portal/TabIcon";
-
-type Item = {
-  href: string;
-  label: string;
-  icon: IconName;
-  exact?: boolean;
-  /** Other paths that belong to this item (detail pages). */
-  also?: string[];
-  count?: number;
-  countLabel?: string;
-};
+import { AppSidebar, type NavGroup } from "@/components/portal/AppSidebar";
 
 export type AdminCounts = { unreadMessages: number; newDiscoveryRequests: number; sessionRequests: number };
 type Counts = AdminCounts;
 
 /** The admin's sections, grouped by the job they're part of (also used by the mobile More page). */
-export function adminNavGroups(counts: Counts): { title: string | null; items: Item[] }[] {
+export function adminNavGroups(counts: Counts): NavGroup[] {
   return [
     {
       title: null,
@@ -68,55 +53,7 @@ export function adminNavGroups(counts: Counts): { title: string | null; items: I
   ];
 }
 
-/** Desktop navigation: a fixed column on the left. Phones keep the bottom tab bar. */
+/** The admin's desktop sidebar. */
 export function AdminSidebar({ name, counts }: { name: string; counts: Counts }) {
-  return (
-    <aside className="pt-sidebar" aria-label="Admin">
-      <Link href="/admin" className="pt-brand pt-sidebar-brand">
-        <Image src="/assets/coach-skill-logo.png" alt="" width={120} height={40} className="logo" />
-        <span className="header-wordmark">Coach Skill</span>
-        <span className="pt-brand-tag">Admin</span>
-      </Link>
-
-      <nav className="pt-sidebar-nav">
-        {adminNavGroups(counts).map((group) => (
-          <div key={group.title ?? "top"} className="pt-sidebar-group">
-            {group.title && <p className="pt-sidebar-heading">{group.title}</p>}
-            <ul>
-              {group.items.map((item) => (
-                <li key={item.href}>
-                  <NavLink href={item.href} exact={item.exact} also={item.also} className="pt-sidebar-link">
-                    <TabIcon name={item.icon} />
-                    <span className="pt-sidebar-label">{item.label}</span>
-                    {item.count ? (
-                      <span className="pt-nav-count" aria-label={`${item.count} ${item.countLabel}`}>
-                        {item.count}
-                      </span>
-                    ) : null}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </nav>
-
-      <div className="pt-sidebar-foot">
-        <NavLink href="/admin/account" className="pt-sidebar-link">
-          <TabIcon name="account" />
-          <span className="pt-sidebar-label">{name}</span>
-        </NavLink>
-        <Link href="/" className="pt-nav-link pt-sidebar-link" target="_blank" rel="noopener noreferrer">
-          <TabIcon name="website" />
-          <span className="pt-sidebar-label">View website</span>
-        </Link>
-        <form action={logout}>
-          <button type="submit" className="pt-nav-link pt-sidebar-link">
-            <TabIcon name="signOut" />
-            <span className="pt-sidebar-label">Sign out</span>
-          </button>
-        </form>
-      </div>
-    </aside>
-  );
+  return <AppSidebar label="Admin" home="/admin" tag="Admin" groups={adminNavGroups(counts)} accountHref="/admin/account" name={name} />;
 }

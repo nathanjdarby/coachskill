@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DateChip } from "@/components/portal/DateChip";
+import { PageHeader } from "@/components/portal/PageHeader";
 import { requireClient } from "@/lib/dal";
 import { getPortalData } from "@/lib/portal";
-import { formatDateTime } from "@/lib/time";
+import { formatTime } from "@/lib/time";
 
 export default async function PortalUpdatesPage() {
   const user = await requireClient();
@@ -9,26 +12,36 @@ export default async function PortalUpdatesPage() {
   if (!data) notFound();
 
   return (
-    <div className="pt-page pt-narrow">
-      <div className="pt-page-head">
-        <h1>Updates</h1>
-        <p className="pt-muted">Session recaps, action points and notes Monika has shared with you.</p>
-      </div>
+    <div className="pt-page ov pt-narrow">
+      <PageHeader
+        eyebrow="Your coaching"
+        title="Updates"
+        lead="Session recaps, action points and notes Monika has shared with you, newest first."
+        actions={
+          <Link href="/portal/messages" className="pt-btn pt-btn-secondary">
+            Reply to Monika
+          </Link>
+        }
+      />
       {data.updates.length === 0 ? (
-        <div className="pt-card">
-          <p className="pt-muted">No updates yet.</p>
-        </div>
+        <section className="pt-card">
+          <p className="ov-empty">No updates yet. After each session, Monika&apos;s recap and your action points will appear here.</p>
+        </section>
       ) : (
-        <ul className="pt-stack">
-          {data.updates.map(({ note, authorName }) => (
-            <li key={note.id} className="pt-card">
-              <p className="pt-muted pt-small">
-                {authorName} · {formatDateTime(note.createdAt)}
-              </p>
-              <p className="pt-prewrap pt-mt-sm">{note.body}</p>
+        <ol className="pc-timeline">
+          {data.updates.map(({ note, authorName }, i) => (
+            <li key={note.id} className={`pc-timeline-item ${i === 0 ? "is-latest" : ""}`}>
+              <DateChip date={note.createdAt} muted={i > 0} />
+              <article className="pt-card pc-timeline-card">
+                <p className="pt-muted pt-small">
+                  {authorName} · {formatTime(note.createdAt)}
+                  {i === 0 && <span className="pt-badge is-accent">Latest</span>}
+                </p>
+                <p className="pt-prewrap">{note.body}</p>
+              </article>
             </li>
           ))}
-        </ul>
+        </ol>
       )}
     </div>
   );
