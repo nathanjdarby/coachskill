@@ -86,7 +86,9 @@ export async function POST(request: NextRequest) {
         fullName: answers.fullName,
         email: answers.email.toLowerCase(),
         company: answers.company,
-        phone: normalisePhone(answers.phone),
+        callPreference: (["video", "phone", "either"] as const).find((v) => v === answers.callPreference) ?? null,
+        // Not asked when they only want video.
+        phone: answers.callPreference === "video" ? null : normalisePhone(answers.phone),
         interests: answers.interests,
         audience: answers.audience,
         // Not asked when it's just for themselves.

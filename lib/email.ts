@@ -362,10 +362,10 @@ export function emailNewEnquiry(input: {
 export function emailBookingLink(input: { to: string; name: string; typeName: string; durationMinutes: number; url: string; expiresAt: Date }) {
   return sendEmail({
     to: input.to,
-    subject: `Pick a time for your ${input.typeName.toLowerCase()} with Monika`,
-    heading: `Hi ${firstName(input.name)}, let's find a time to talk`,
+    subject: `Book your ${input.typeName.toLowerCase()} with Monika`,
+    heading: `Hi ${firstName(input.name)}, let's book our ${input.typeName.toLowerCase()}`,
     paragraphs: [
-      `Thanks for getting in touch. Choose a time that suits you for a ${input.durationMinutes}-minute ${input.typeName.toLowerCase()} — by video or phone, whichever you prefer. You'll get a confirmation as soon as you've booked.`,
+      `Thank you for your enquiry — I'd love to talk it through with you. Choose a time that suits you for a ${input.durationMinutes}-minute ${input.typeName.toLowerCase()}, by video or phone, whichever you prefer. You'll get a confirmation as soon as you've booked.`,
       "All times are shown in UK time.",
     ],
     button: { label: "Choose a time", url: input.url },

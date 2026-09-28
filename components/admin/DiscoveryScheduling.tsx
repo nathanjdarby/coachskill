@@ -38,6 +38,8 @@ export function DiscoveryScheduling({
   appointments,
   link,
   phone,
+  prefersPhone = false,
+  showCallNow = true,
 }: {
   discoveryCallId: number;
   firstName: string;
@@ -46,6 +48,10 @@ export function DiscoveryScheduling({
   link: { id: number; url: string; expiresAt: Date } | null;
   /** The phone number from their enquiry, if they gave one. */
   phone?: string | null;
+  /** Whether they said they'd prefer a phone call. */
+  prefersPhone?: boolean;
+  /** Show "Start a call now" (off where the page already has one). */
+  showCallNow?: boolean;
 }) {
   const [panel, setPanel] = useState<"schedule" | "link" | null>(null);
   const [message, setMessage] = useState<FormState>(undefined);
@@ -130,7 +136,7 @@ export function DiscoveryScheduling({
       )}
       <FormMessage state={message} />
 
-      <CallNowButton target={{ discoveryCallId }} firstName={firstName} />
+      {showCallNow && <CallNowButton target={{ discoveryCallId }} firstName={firstName} />}
 
       <div className="pt-btn-row">
         <button
@@ -157,7 +163,7 @@ export function DiscoveryScheduling({
         </button>
       </div>
 
-      {panel === "schedule" && <ScheduleForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} phone={phone ?? ""} onDone={done} />}
+      {panel === "schedule" && <ScheduleForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} phone={phone ?? ""} prefersPhone={prefersPhone} onDone={done} />}
       {panel === "link" && (
         <LinkForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} replacing={Boolean(link)} onDone={done} />
       )}
@@ -197,12 +203,14 @@ function ScheduleForm({
   firstName,
   types,
   phone,
+  prefersPhone,
   onDone,
 }: {
   discoveryCallId: number;
   firstName: string;
   types: SchedulingType[];
   phone: string;
+  prefersPhone: boolean;
   onDone: (result: FormState) => void;
 }) {
   const [state, action] = useActionState(closingAction(scheduleDiscoveryCall.bind(null, discoveryCallId), onDone), undefined);
@@ -215,7 +223,7 @@ function ScheduleForm({
 
   return (
     <form action={action} className="pt-form ds-form">
-      <CallTypeFields forAdmin defaultPhone={phone} idPrefix={`ds-${discoveryCallId}`} />
+      <CallTypeFields forAdmin defaultPhone={phone} defaultType={prefersPhone ? "phone" : "video"} idPrefix={`ds-${discoveryCallId}`} />
       <TypeSelect
         types={types}
         value={type.id}

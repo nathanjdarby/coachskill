@@ -1,0 +1,1 @@
+ALTER TABLE `discovery_calls` ADD `call_preference` text;

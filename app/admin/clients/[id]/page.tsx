@@ -18,6 +18,7 @@ import { AutoRefresh } from "@/components/portal/AutoRefresh";
 import { MessageComposer, MessageThread } from "@/components/portal/MessageThread";
 import { requireAdmin } from "@/lib/dal";
 import { CallNowButton } from "@/components/admin/CallNowButton";
+import { DiscoveryCallCard } from "@/components/admin/DiscoveryCallCard";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { workshopBookingsFor } from "@/lib/attendees";
 import { appointmentAttendance, isNoShow } from "@/lib/attendance";
@@ -95,6 +96,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
 
       <div className="pt-columns pt-columns-wide">
         <div className="pt-stack">
+          {discovery && <DiscoveryCallCard call={discovery} firstName={client.fullName.split(/\s+/)[0]} hostName={admin.name} />}
           <section className="pt-card" id="messages">
             <h2>Messages</h2>
             <MessageThread

@@ -82,7 +82,9 @@ export const discoveryCalls = sqliteTable("discovery_calls", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   company: text("company").notNull(),
-  /** Optional, for people who'd rather have a phone call. */
+  /** How they'd like to talk: video, phone or either. */
+  callPreference: text("call_preference", { enum: ["video", "phone", "either"] }),
+  /** Required when they prefer a phone call, optional for "either". */
   phone: text("phone"),
   /** Enquiry form answers (see lib/discovery.ts). `interests` is values joined with "|". */
   interests: text("interests"),

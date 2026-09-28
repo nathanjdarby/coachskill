@@ -49,9 +49,13 @@ export default async function BookPage({ params }: { params: Promise<{ token: st
   const duration = durationFor(type);
   const days = groupSlotsByDay(availableSlots(duration, { bufferMinutes: type.bufferMinutes }));
   const firstName = link.inviteeName.split(/\s+/)[0];
-  const enquiryPhone = link.discoveryCallId
-    ? getDb().select({ phone: discoveryCalls.phone }).from(discoveryCalls).where(eq(discoveryCalls.id, link.discoveryCallId)).get()?.phone
-    : null;
+  const enquiry = link.discoveryCallId
+    ? getDb()
+        .select({ phone: discoveryCalls.phone, preference: discoveryCalls.callPreference })
+        .from(discoveryCalls)
+        .where(eq(discoveryCalls.id, link.discoveryCallId))
+        .get()
+    : undefined;
   return (
     <AuthShell
       wide
@@ -62,7 +66,7 @@ export default async function BookPage({ params }: { params: Promise<{ token: st
         days={days}
         action={bookFromLink.bind(null, token)}
         submitLabel="Book"
-        callChoice={{ defaultPhone: enquiryPhone ?? "" }}
+        callChoice={{ defaultPhone: enquiry?.phone ?? "", defaultType: enquiry?.preference === "phone" ? "phone" : "video" }}
       />
     </AuthShell>
   );

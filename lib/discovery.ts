@@ -11,12 +11,15 @@ type Base = {
   id: QuestionId;
   section: SectionId;
   title: string | ((ctx: FlowContext) => string);
-  help?: string;
+  /** Hint under the question; may depend on earlier answers. */
+  help?: string | ((answers: Answers) => string);
   optional?: boolean;
   /** Short label used on the review screen and admin view. */
   label: string;
   /** Not asked (and not required) when this returns true, e.g. team size for "Myself". */
   skipIf?: (answers: Answers) => boolean;
+  /** Makes an optional question required for some answers (phone number for phone calls). */
+  requiredIf?: (answers: Answers) => boolean;
 };
 
 export type Question =
@@ -45,6 +48,7 @@ export type SectionId = (typeof sections)[number]["id"];
 export type QuestionId =
   | "fullName"
   | "email"
+  | "callPreference"
   | "phone"
   | "company"
   | "interests"
@@ -53,6 +57,12 @@ export type QuestionId =
   | "support"
   | "startTimeline"
   | "anythingElse";
+
+export const callPreferenceOptions: Option[] = [
+  { value: "video", label: "Video call", hint: "A private video room in your browser — no app needed" },
+  { value: "phone", label: "Phone call", hint: "Monika rings you" },
+  { value: "either", label: "Either is fine" },
+];
 
 export const interestOptions: Option[] = [
   { value: "sales_methodologies", label: "Sales Methodologies Training" },
@@ -125,17 +135,31 @@ export const questions: Question[] = [
     autoComplete: "email",
   },
   {
+    id: "callPreference",
+    section: "about",
+    type: "single",
+    label: "Prefers to talk by",
+    title: "How would you prefer to talk?",
+    help: "For your discovery call with Monika.",
+    options: callPreferenceOptions,
+  },
+  {
     id: "phone",
     section: "about",
     type: "text",
     inputType: "tel",
     label: "Phone",
-    title: "And a phone number?",
-    help: "Optional — handy if you'd prefer a phone call rather than video.",
+    title: ({ firstName }) => (firstName ? `What number should Monika call, ${firstName}?` : "What number should Monika call?"),
+    help: (a) =>
+      a.callPreference === "phone"
+        ? "Monika will ring you on this number."
+        : "Optional — handy if a phone call ends up easier. You can still choose when you book.",
     placeholder: "07700 900123",
     maxLength: 30,
     autoComplete: "tel",
     optional: true,
+    skipIf: (a) => a.callPreference === "video",
+    requiredIf: (a) => a.callPreference === "phone",
   },
   {
     id: "company",
@@ -211,6 +235,10 @@ export const questions: Question[] = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export function questionHelp(q: Question, answers: Answers) {
+  return typeof q.help === "function" ? q.help(answers) : q.help;
+}
+
 export function questionTitle(q: Question, ctx: FlowContext) {
   return typeof q.title === "function" ? q.title(ctx) : q.title;
 }
@@ -256,9 +284,14 @@ export function validationError(q: Question, answers: Answers): string | null {
   return null;
 }
 
+/** Whether a question must be answered, given the answers so far. */
+export function isRequired(q: Question, answers: Answers) {
+  return !q.optional || (q.requiredIf?.(answers) ?? false);
+}
+
 /** Required questions that are unanswered or invalid. */
 export function missingOrInvalid(answers: Answers) {
-  return activeQuestions(answers).filter((q) => (!q.optional && !isAnswered(q, answers)) || validationError(q, answers));
+  return activeQuestions(answers).filter((q) => (isRequired(q, answers) && !isAnswered(q, answers)) || validationError(q, answers));
 }
 
 /** Keeps only known question ids with string values, trimmed to each question's limit. */
@@ -293,6 +326,7 @@ export function personaLabel(value: string) {
 
 type StoredEnquiry = {
   company: string;
+  callPreference?: string | null;
   interests: string | null;
   audience: string | null;
   teamSize: string | null;
@@ -323,6 +357,7 @@ export function enquiryRows(e: StoredEnquiry): { label: string; value: string; l
   }
   if (e.audience) rows.push({ label: "Who it's for", value: optionLabel(audienceOptions, e.audience) });
   if (e.teamSize && e.audience !== "myself") rows.push({ label: "How many people", value: optionLabel(teamSizeOptions, e.teamSize) });
+  if (e.callPreference) rows.push({ label: "Prefers to talk by", value: optionLabel(callPreferenceOptions, e.callPreference) });
   if (e.support) rows.push({ label: "Support with", value: e.support });
   if (e.startTimeline) rows.push({ label: "Looking to start", value: optionLabel(startOptions, e.startTimeline) });
   if (e.persona) rows.push({ label: "Describes themselves as", value: personaLabel(e.persona) });

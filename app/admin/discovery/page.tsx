@@ -1,41 +1,26 @@
 import { DiscoveryActions, Disclosure } from "@/components/admin/ClientForms";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
-import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/DiscoveryScheduling";
+import Link from "next/link";
 import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
-import { availableSlots, groupSlotsByDay } from "@/lib/booking";
-import { hostJoinUrl } from "@/lib/join";
-import { callPhone } from "@/lib/meeting";
 import { requireAdmin } from "@/lib/dal";
 import { telHref } from "@/lib/phone";
-import { durationFor, listEventTypes } from "@/lib/event-types";
 import { enquirySubtitle } from "@/lib/discovery";
 import { listDiscoveryCallsWithClients } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
 export default async function AdminDiscoveryPage() {
-  const admin = await requireAdmin();
+  await requireAdmin();
   const rows = await listDiscoveryCallsWithClients();
+  // Only for the badges; calls are arranged from the client's page.
   const scheduling = await schedulingForDiscovery(rows.map((r) => r.call.id));
-  const hostLinks = new Map(
-    await Promise.all(
-      [...scheduling.values()].flatMap((s) => s.appointments).map(async (a) => [a.id, await hostJoinUrl(a, admin.name)] as const),
-    ),
-  );
-  // Types Monika can send to prospects, with her free times for each.
-  const types: SchedulingType[] = listEventTypes({ activeOnly: true })
-    .filter((t) => t.audience === "invite_only")
-    .map((t) => {
-      const minutes = durationFor(t);
-      return { id: t.id, label: t.name, minutes, days: groupSlotsByDay(availableSlots(minutes, { bufferMinutes: t.bufferMinutes })) };
-    });
 
   return (
     <div className="pt-page">
       <div className="pt-page-head">
         <h1>Discovery requests</h1>
         <p className="pt-muted">
-          Enquiries from the website&apos;s enquiry form, newest first. Schedule a call yourself or email a link so they can pick
-          a time. When you decide to work with someone, add them as a client — their calls and answers move across.
+          Enquiries from the website&apos;s enquiry form, newest first. Read each one and decide: <strong>Work with</strong> adds
+          them as a client, and you then arrange their discovery call — video or phone — from their client page.
         </p>
       </div>
 
@@ -53,6 +38,7 @@ export default async function AdminDiscoveryPage() {
                 <span className="pt-muted pt-small">
                   {enquirySubtitle(call)}
                 </span>
+                {call.callPreference === "phone" && <span className="pt-badge">Prefers phone</span>}
                 {nextCall && <span className="pt-badge is-info">Call {formatDateTime(nextCall.startsAt)}</span>}
                 {!nextCall && link && <span className="pt-badge is-info">Link sent</span>}
                 {clientId ? (
@@ -83,25 +69,17 @@ export default async function AdminDiscoveryPage() {
                 )}
                 <EnquiryAnswers enquiry={call} />
               </dl>
-              {!call.declinedAt && (
-                <DiscoveryScheduling
-                  discoveryCallId={call.id}
-                  firstName={call.fullName.split(/\s+/)[0]}
-                  types={types}
-                  appointments={appointments.map((a) => ({
-                    id: a.id,
-                    title: a.title,
-                    startsAt: a.startsAt,
-                    durationMinutes: a.durationMinutes,
-                    meetingUrl: hostLinks.get(a.id) ?? null,
-                    phone: callPhone(a),
-                    cancelledAt: a.cancelledAt,
-                    upcoming: isUpcoming(a),
-                    colour: a.typeColour,
-                  }))}
-                  link={link && { id: link.id, url: link.url, expiresAt: link.expiresAt }}
-                  phone={call.phone}
-                />
+              {clientId && (
+                <p className="pt-details-note pt-small">
+                  {nextCall
+                    ? `Discovery call booked for ${formatDateTime(nextCall.startsAt)}.`
+                    : link
+                      ? "Booking link sent — waiting for them to pick a time."
+                      : "Next: arrange their discovery call."}{" "}
+                  <Link href={`/admin/clients/${clientId}#discovery-call`} className="pt-link">
+                    Open their client page →
+                  </Link>
+                </p>
               )}
               <div className="pt-details-actions">
                 <DiscoveryActions

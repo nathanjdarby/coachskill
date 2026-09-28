@@ -5,15 +5,18 @@ import { useState } from "react";
 /** "Video call or phone call?" plus the number to ring, for booking forms. */
 export function CallTypeFields({
   defaultPhone = "",
+  defaultType = "video",
   idPrefix = "ct",
   forAdmin = false,
 }: {
   defaultPhone?: string;
+  /** Start on what they said they'd prefer. */
+  defaultType?: "video" | "phone";
   idPrefix?: string;
   /** Monika scheduling a call herself: worded from her side. */
   forAdmin?: boolean;
 }) {
-  const [type, setType] = useState<"video" | "phone">("video");
+  const [type, setType] = useState<"video" | "phone">(defaultType);
   return (
     <fieldset className="ct">
       <legend className="ct-legend">{forAdmin ? "Video or phone?" : "How would you like to talk?"}</legend>

@@ -63,12 +63,15 @@ function InviteDialog({
             account is linked to this client record, so when they sign in they&apos;ll see:
           </p>
           <ul className="pt-ticks">
-            {hasDiscovery && <li>Their goals from the discovery call</li>}
+            {hasDiscovery && <li>What they told you in their enquiry</li>}
             <li>Sessions you book</li>
             <li>Updates you share</li>
             <li>Messages with you</li>
           </ul>
           <p className="pt-muted pt-small">The link works once and expires in 7 days.</p>
+          {justAdded && hasDiscovery && (
+            <p className="pt-small">Next, arrange their discovery call from their client page.</p>
+          )}
           <FormMessage state={state} />
           <div className="pt-dialog-actions">
             <button type="button" className="pt-btn pt-btn-secondary" onClick={close}>

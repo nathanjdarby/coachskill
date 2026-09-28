@@ -73,6 +73,7 @@ export async function scheduleDiscoveryCall(discoveryCallId: number, _state: For
   await requireAdmin();
   const found = loadRequest(discoveryCallId);
   if (!found) return { ok: false, message: "That discovery request no longer exists." };
+  if (!found.clientId) return { ok: false, message: "Accept them first with “Work with…”, then arrange the call from their client page." };
   const type = chosenType(formData);
   if (!type) return { ok: false, message: "Choose a booking type." };
 
@@ -127,6 +128,7 @@ export async function sendBookingLink(discoveryCallId: number, _state: FormState
   await requireAdmin();
   const found = loadRequest(discoveryCallId);
   if (!found) return { ok: false, message: "That discovery request no longer exists." };
+  if (!found.clientId) return { ok: false, message: "Accept them first with “Work with…”, then arrange the call from their client page." };
   const type = chosenType(formData);
   if (!type) return { ok: false, message: "Choose a booking type." };
 

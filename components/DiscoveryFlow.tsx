@@ -15,6 +15,8 @@ import {
   firstNameOf,
   formatAnswer,
   isAnswered,
+  isRequired,
+  questionHelp,
   multiValues,
   questionTitle,
   questions,
@@ -153,6 +155,12 @@ export function DiscoveryFlow() {
         }
       }
       if (returnToReview && step !== "intro") {
+        // A changed answer can make another question necessary (e.g. phone for a phone call).
+        const needed = activeQuestions(latestAnswers).find((q) => isRequired(q, latestAnswers) && !isAnswered(q, latestAnswers));
+        if (needed) {
+          goTo(needed.id, 1, latestAnswers);
+          return;
+        }
         setReturnToReview(false);
         goTo("review", 1, latestAnswers);
         return;
@@ -197,7 +205,7 @@ export function DiscoveryFlow() {
     goTo(ALL_STEPS[1], 1, {});
   }
 
-  const canContinue = !question || question.optional || isAnswered(question, answers);
+  const canContinue = !question || !isRequired(question, answers) || isAnswered(question, answers);
 
   async function readyToken(): Promise<string | null> {
     const t = tokenRef.current ?? (tokenRef.current = await requestToken());
@@ -511,6 +519,7 @@ function QuestionScreen({
   const errorId = `q-${q.id}-error`;
   const section = sections[sectionNumber - 1];
   const value = answers[q.id] ?? "";
+  const help = questionHelp(q, answers);
 
   useEffect(() => {
     // Text questions focus their field; choice questions focus the heading for screen readers.
@@ -525,9 +534,9 @@ function QuestionScreen({
       <h1 ref={headingRef} id={titleId} tabIndex={-1} className="onb-question-title">
         {title}
       </h1>
-      {q.help && (
+      {help && (
         <p id={helpId} className="onb-help">
-          {q.help}
+          {help}
         </p>
       )}
 
@@ -537,7 +546,7 @@ function QuestionScreen({
             autoFocus
             type={q.inputType ?? "text"}
             aria-labelledby={titleId}
-            aria-describedby={error ? errorId : q.help ? helpId : undefined}
+            aria-describedby={error ? errorId : help ? helpId : undefined}
             aria-invalid={error ? true : undefined}
             value={value}
             maxLength={q.maxLength}
@@ -552,7 +561,7 @@ function QuestionScreen({
             <textarea
               autoFocus
               aria-labelledby={titleId}
-              aria-describedby={q.help ? helpId : undefined}
+              aria-describedby={help ? helpId : undefined}
               value={value}
               maxLength={q.maxLength}
               rows={5}
@@ -642,7 +651,7 @@ function QuestionScreen({
         <button type="button" onClick={onBack} className="onb-back">
           <span aria-hidden>←</span> Back
         </button>
-        {q.optional && !isAnswered(q, answers) ? (
+        {!isRequired(q, answers) && !isAnswered(q, answers) ? (
           <button type="button" onClick={onNext} className="onb-secondary">
             Skip
           </button>
@@ -716,7 +725,7 @@ function Review({
                 .filter((q) => q.section === s.id)
                 .map((q) => {
                   const answered = isAnswered(q, answers);
-                  const missing = !answered && !q.optional;
+                  const missing = !answered && isRequired(q, answers);
                   return (
                     <button
                       key={q.id}
