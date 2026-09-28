@@ -70,7 +70,7 @@ export async function listAgenda(from: Date, to: Date, hostName: string): Promis
       colour: colour ?? "#22d3ee",
       joinUrl: a.cancelledAt ? null : await hostJoinUrl(a, hostName),
       href: `/admin/sessions/${a.id}`,
-      status: statusOf(a.id),
+      status: a.awaitingApproval && !a.approvedAt ? { label: "Awaiting approval", tone: "warn" as const } : statusOf(a.id),
     })))),
     ...(await Promise.all(
       runs.map(async (w) => {

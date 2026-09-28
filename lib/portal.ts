@@ -62,6 +62,23 @@ export async function listClientsOverview() {
   });
 }
 
+/** Clients' booking requests waiting for Monika's approval, soonest first. */
+export async function listSessionRequests() {
+  return getDb()
+    .select({ session: coachingSessions, clientName: clients.fullName })
+    .from(coachingSessions)
+    .leftJoin(clients, eq(coachingSessions.clientId, clients.id))
+    .where(
+      and(
+        eq(coachingSessions.awaitingApproval, true),
+        sql`${coachingSessions.approvedAt} is null`,
+        isNull(coachingSessions.cancelledAt),
+        gte(coachingSessions.startsAt, new Date()),
+      ),
+    )
+    .orderBy(asc(coachingSessions.startsAt));
+}
+
 export async function adminDashboardCounts() {
   const db = getDb();
   const weekAhead = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

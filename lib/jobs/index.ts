@@ -2,6 +2,7 @@ import "server-only";
 import { syncDueCalendars } from "@/lib/calendar-sync";
 import { sendDueFollowUps } from "@/lib/follow-up";
 import { sendSessionReminders1h, sendSessionReminders24h } from "./session-reminders";
+import { expireSessionRequests } from "./session-requests";
 import { sendBalanceReminders, sendBalanceRequests } from "./workshop-balance";
 import { sendWorkshopReminders1h, sendWorkshopReminders24h } from "./workshop-reminders";
 
@@ -10,6 +11,7 @@ type Job = (now: Date) => Promise<number>;
 const JOBS: Record<string, Job> = {
   // First, so fresh busy times are in place before anything else runs.
   calendarSync: syncDueCalendars,
+  sessionRequests: expireSessionRequests,
   balanceRequests: sendBalanceRequests,
   balanceReminders: sendBalanceReminders,
   sessionReminders24h: sendSessionReminders24h,

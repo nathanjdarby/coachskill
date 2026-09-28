@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, gt, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   availabilityBlocks,
@@ -19,6 +19,11 @@ import { londonDate, londonLocalToUtc } from "@/lib/time";
 // both take the same slot.
 
 const MINUTE = 60_000;
+
+/** Sessions that are confirmed: anything but a client's request still awaiting approval. */
+export function isConfirmed() {
+  return or(eq(coachingSessions.awaitingApproval, false), isNotNull(coachingSessions.approvedAt));
+}
 const DAY = 24 * 60 * MINUTE;
 
 export function getBookingSettings(): BookingSettings {

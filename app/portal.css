@@ -2817,3 +2817,27 @@ fieldset.pt-field {
   margin: 0;
   padding: 0 22px 14px;
 }
+
+/* Admin: clients' booking requests */
+.pt-requests {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.pt-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.pt-request-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pt-request-actions .pt-btn {
+  padding: 8px 16px;
+}

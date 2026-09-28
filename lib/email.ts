@@ -259,6 +259,36 @@ export function emailSessionCancelled(input: SessionEmail & { byClient: boolean 
   });
 }
 
+/** A client's own booking, waiting for Monika to approve it (no calendar invite yet). */
+export function emailSessionRequested(input: SessionEmail & { moved?: boolean }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Session ${input.moved ? "request moved" : "requested"}: ${formatDateTime(input.startsAt)}`,
+    heading: `Hi ${firstName(input.name)}, thanks for your request`,
+    paragraphs: [
+      `You've asked for: ${sessionLine(input)}`,
+      "Monika will confirm it shortly. Once she does, you'll get another email with the joining details and a calendar invite. The time is held for you in the meantime.",
+    ],
+    button: viewButton(input),
+  });
+}
+
+/** Monika couldn't take a requested session; the package session is returned. */
+export function emailSessionDeclined(input: SessionEmail & { expired?: boolean }) {
+  return sendEmail({
+    to: input.to,
+    subject: `Session request not confirmed: ${formatDateTime(input.startsAt)}`,
+    heading: `Hi ${firstName(input.name)}, that time didn't work out`,
+    paragraphs: [
+      input.expired
+        ? `Monika wasn't able to confirm your request in time: ${sessionLine(input)}`
+        : `Unfortunately Monika can't make this time: ${sessionLine(input)}`,
+      "The session has gone back into your package, so please pick another time that suits you.",
+    ],
+    button: { label: "Book another time", url: input.url },
+  });
+}
+
 export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | "soon" }) {
   return sendEmail({
     to: input.to,

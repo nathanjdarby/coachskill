@@ -13,6 +13,7 @@ export function SessionActions({
   cutoffHours,
   rescheduleDays,
   icsHref = `/portal/sessions/${sessionId}/ics`,
+  showCalendar = true,
   reschedule = rescheduleSession.bind(null, sessionId),
   cancel = () => cancelMySession(sessionId),
   cancelConfirm = "Cancel this session? It will go back into your package.",
@@ -24,6 +25,8 @@ export function SessionActions({
   rescheduleDays: SlotDay[];
   /** Overrides for the public appointment page (people without an account). */
   icsHref?: string;
+  /** Off for a request Monika hasn't confirmed yet. */
+  showCalendar?: boolean;
   reschedule?: (state: FormState, formData: FormData) => Promise<FormState>;
   cancel?: () => Promise<FormState>;
   cancelConfirm?: string;
@@ -36,9 +39,11 @@ export function SessionActions({
   return (
     <div className="pt-session-actions">
       <div className="pt-session-buttons">
-        <a href={icsHref} className="pt-link pt-small">
-          Add to calendar
-        </a>
+        {showCalendar && (
+          <a href={icsHref} className="pt-link pt-small">
+            Add to calendar
+          </a>
+        )}
         {canChange && (
           <>
             <button type="button" className="pt-link-btn pt-small" onClick={() => setOpen((o) => !o)}>

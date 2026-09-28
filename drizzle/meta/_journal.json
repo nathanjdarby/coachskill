@@ -148,6 +148,13 @@
       "when": 1790619669632,
       "tag": "0020_workshop_programmes",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1790626332595,
+      "tag": "0021_session_approval",
+      "breakpoints": true
     }
   ]
 }

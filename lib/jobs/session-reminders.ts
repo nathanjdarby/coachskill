@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { isConfirmed } from "@/lib/booking";
 import { getDb } from "@/lib/db";
 import { coachingSessions } from "@/lib/db/schema";
 import { emailSessionReminder } from "@/lib/email";
@@ -27,6 +28,7 @@ async function sendReminders(now: Date, window: Window) {
     .where(
       and(
         isNull(coachingSessions.cancelledAt),
+        isConfirmed(),
         isNull(column),
         // The day-before reminder leaves sessions under an hour away to the 1-hour one.
         gt(coachingSessions.startsAt, window === "24h" ? new Date(now.getTime() + HOUR) : now),

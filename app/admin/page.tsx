@@ -1,19 +1,22 @@
 import Link from "next/link";
+import { SessionRequestButtons } from "@/components/admin/SessionRequestButtons";
 import { WaitingBanner } from "@/components/admin/WaitingBanner";
 import { requireAdmin } from "@/lib/dal";
 import {
   adminDashboardCounts,
   listClientsOverview,
   listDiscoveryCallsWithClients,
+  listSessionRequests,
 } from "@/lib/portal";
 import { formatDate, formatDateTime } from "@/lib/time";
 
 export default async function AdminOverviewPage() {
   const admin = await requireAdmin();
-  const [counts, clients, requests] = await Promise.all([
+  const [counts, clients, requests, sessionRequests] = await Promise.all([
     adminDashboardCounts(),
     listClientsOverview(),
     listDiscoveryCallsWithClients(),
+    listSessionRequests(),
   ]);
 
   const unread = clients.filter((c) => c.unread > 0);
@@ -38,6 +41,34 @@ export default async function AdminOverviewPage() {
       </div>
 
       <WaitingBanner />
+
+      {sessionRequests.length > 0 && (
+        <section className="pt-card pt-requests" id="requests">
+          <div className="pt-card-head">
+            <h2>Session requests</h2>
+            <span className="pt-badge is-warn">{sessionRequests.length} to approve</span>
+          </div>
+          <p className="pt-muted pt-small pt-card-sub">
+            Clients&apos; bookings aren&apos;t confirmed until you approve them. Anything not approved by its start time
+            is released automatically.
+          </p>
+          <ul className="pt-list">
+            {sessionRequests.map(({ session: s, clientName }) => (
+              <li key={s.id} className="pt-request">
+                <div>
+                  <Link href={s.clientId ? `/admin/clients/${s.clientId}#sessions` : `/admin/sessions/${s.id}`} className="pt-table-title">
+                    {clientName ?? s.inviteeName ?? "Client"}
+                  </Link>
+                  <span className="pt-muted pt-small pt-block">
+                    {s.title} · {formatDateTime(s.startsAt)} · {s.durationMinutes} min
+                  </span>
+                </div>
+                <SessionRequestButtons sessionId={s.id} label={`${clientName ?? "this"}'s request`} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="pt-stats">
         {stats.map((s) => (

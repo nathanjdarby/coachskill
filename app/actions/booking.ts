@@ -9,7 +9,7 @@ import { getDb } from "@/lib/db";
 import { availabilityBlocks, availabilityRules, bookingSettings, coachingSessions } from "@/lib/db/schema";
 import { COACHING_SLUG, durationFor, getEventType, getEventTypeBySlug } from "@/lib/event-types";
 import { resolveMeetingUrl } from "@/lib/meeting";
-import { notifySessionChange } from "@/lib/session-notify";
+import { notifySessionChange, notifySessionDeclined } from "@/lib/session-notify";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
 
@@ -28,7 +28,7 @@ function parseSlot(formData: FormData) {
 
 // — Client —
 
-/** Books a slot using a session from the client's package. */
+/** Requests a slot using a session from the client's package; Monika approves it before it's confirmed. */
 export async function bookSession(_state: FormState, formData: FormData): Promise<FormState> {
   const user = await requireClient();
   const startsAt = parseSlot(formData);
@@ -59,6 +59,7 @@ export async function bookSession(_state: FormState, formData: FormData): Promis
         meetingUrl: resolveMeetingUrl(type) ?? settings.defaultMeetingUrl,
         locationMode: type?.locationMode ?? "custom",
         bookedBy: "client",
+        awaitingApproval: true,
         createdAt: now,
         updatedAt: now,
       })
@@ -70,7 +71,10 @@ export async function bookSession(_state: FormState, formData: FormData): Promis
 
   after(() => notifySessionChange(result.session.id, "booked", "client"));
   revalidateBooking(user.clientId);
-  return { ok: true, message: "Booked! A calendar invite is on its way to your inbox." };
+  return {
+    ok: true,
+    message: "Requested! Monika will confirm it shortly — you'll get an email with the calendar invite once she does.",
+  };
 }
 
 /** Moves one of the client's sessions to a new slot (before the cutoff). */
@@ -105,13 +109,15 @@ export async function rescheduleSession(sessionId: number, _state: FormState, fo
       })
       .where(eq(coachingSessions.id, session.id))
       .run();
-    return { ok: true } as const;
+    return { ok: true, pending: session.awaitingApproval && !session.approvedAt } as const;
   });
   if ("error" in result) return { ok: false, message: result.error };
 
   after(() => notifySessionChange(sessionId, "rescheduled", "client"));
   revalidateBooking(user.clientId);
-  return { ok: true, message: "Moved. We've emailed you an updated calendar invite." };
+  return result.pending
+    ? { ok: true, message: "Moved. Monika will confirm the new time shortly." }
+    : { ok: true, message: "Moved. We've emailed you an updated calendar invite." };
 }
 
 /** Cancels one of the client's sessions (before the cutoff); the package session is returned. */
@@ -131,7 +137,10 @@ export async function cancelMySession(sessionId: number): Promise<FormState> {
   cancel(session.id, "client");
   after(() => notifySessionChange(session.id, "cancelled", "client"));
   revalidateBooking(user.clientId);
-  return { ok: true, message: "Cancelled. The session is back in your package." };
+  return {
+    ok: true,
+    message: session.awaitingApproval && !session.approvedAt ? "Request withdrawn. The session is back in your package." : "Cancelled. The session is back in your package.",
+  };
 }
 
 function cancel(sessionId: number, by: "admin" | "client") {
@@ -154,8 +163,51 @@ export async function cancelSessionAsAdmin(sessionId: number, clientId: number) 
     .get();
   if (!session) return;
   cancel(session.id, "admin");
-  if (session.startsAt.getTime() > Date.now()) after(() => notifySessionChange(session.id, "cancelled", "admin"));
+  if (session.awaitingApproval && !session.approvedAt) after(() => notifySessionDeclined(session.id));
+  else if (session.startsAt.getTime() > Date.now()) after(() => notifySessionChange(session.id, "cancelled", "admin"));
   revalidateBooking(clientId);
+}
+
+/** A client's request that's still waiting for approval. */
+function pendingRequest(sessionId: number) {
+  return getDb()
+    .select()
+    .from(coachingSessions)
+    .where(
+      and(
+        eq(coachingSessions.id, sessionId),
+        eq(coachingSessions.awaitingApproval, true),
+        isNull(coachingSessions.approvedAt),
+        isNull(coachingSessions.cancelledAt),
+      ),
+    )
+    .get();
+}
+
+/** Confirms a client's request: they get the usual booking email and calendar invite. */
+export async function approveSession(sessionId: number) {
+  await requireAdmin();
+  const session = pendingRequest(sessionId);
+  if (!session) return;
+  getDb()
+    .update(coachingSessions)
+    .set({ approvedAt: new Date(), icsSequence: sql`${coachingSessions.icsSequence} + 1`, updatedAt: new Date() })
+    .where(eq(coachingSessions.id, session.id))
+    .run();
+  after(() => notifySessionChange(session.id, "booked", "admin"));
+  revalidateBooking(session.clientId ?? undefined);
+  revalidatePath("/admin/calendar");
+}
+
+/** Turns down a client's request: the slot and package session are freed and the client is told. */
+export async function declineSession(sessionId: number) {
+  await requireAdmin();
+  const session = pendingRequest(sessionId);
+  if (!session) return;
+  cancel(session.id, "admin");
+  after(() => notifySessionDeclined(session.id));
+  revalidateBooking(session.clientId ?? undefined);
+  revalidatePath("/admin/calendar");
 }
 
 function timeToMinutes(value: string) {

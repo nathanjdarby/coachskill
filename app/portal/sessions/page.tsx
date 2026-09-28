@@ -12,6 +12,9 @@ import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
+/** A booking Monika hasn't confirmed yet. */
+const isRequest = (s: { awaitingApproval: boolean; approvedAt: Date | null }) => s.awaitingApproval && !s.approvedAt;
+
 export default async function PortalSessionsPage({ searchParams }: { searchParams: Promise<{ purchase?: string }> }) {
   const user = await requireClient();
   const [{ purchase }, sessions, balances, offers] = await Promise.all([
@@ -67,7 +70,8 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
           <p className="pt-muted pt-small pt-card-sub">
             {bookMinutes} minutes · uses 1 of your {credit.remaining} remaining {credit.remaining === 1 ? "session" : "sessions"}
           </p>
-          <BookingPicker days={bookDays} action={bookSession} submitLabel="Book" />
+          <p className="pt-muted pt-small">Monika confirms each booking — you&apos;ll get the calendar invite once she has.</p>
+          <BookingPicker days={bookDays} action={bookSession} submitLabel="Request this time" />
         </section>
       )}
 
@@ -80,13 +84,18 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
             {upcoming.map((s, i) => (
               <li key={s.id} className={`pt-session ${i === 0 ? "is-next" : ""}`}>
                 <div>
-                  <p className="pt-session-title">{s.title}</p>
+                  <p className="pt-session-title">
+                    {s.title} {isRequest(s) && <span className="pt-badge is-warn">Awaiting confirmation</span>}
+                  </p>
                   <p className="pt-muted pt-small">
                     {formatDateTime(s.startsAt)} · {s.durationMinutes} min
                     {s.locationMode === "phone" && " · Phone call — Monika will ring you"}
                   </p>
+                  {isRequest(s) && (
+                    <p className="pt-muted pt-small">Monika will confirm this shortly — you&apos;ll get the joining details by email.</p>
+                  )}
                 </div>
-                {s.meetingUrl && (
+                {s.meetingUrl && !isRequest(s) && (
                   <JoinButton
                     url={joinUrls.get(s.id)!}
                     startsAt={s.startsAt}
@@ -96,6 +105,8 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
                 )}
                 <SessionActions
                   sessionId={s.id}
+                  showCalendar={!isRequest(s)}
+                  cancelConfirm={isRequest(s) ? "Withdraw this request? The session goes back into your package." : undefined}
                   canChange={changeable.get(s.id) != null}
                   cutoffHours={settings.cancelCutoffHours}
                   rescheduleDays={changeable.get(s.id) ?? []}

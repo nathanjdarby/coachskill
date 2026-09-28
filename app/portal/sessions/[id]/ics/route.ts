@@ -19,7 +19,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .from(coachingSessions)
     .where(and(eq(coachingSessions.id, id), eq(coachingSessions.clientId, user.clientId)))
     .limit(1);
-  if (!session) return new NextResponse("Not found", { status: 404 });
+  // No calendar entry until Monika has confirmed the booking.
+  if (!session || (session.awaitingApproval && !session.approvedAt)) return new NextResponse("Not found", { status: 404 });
 
   const ics = buildIcs({
     sessionId: session.id,

@@ -19,6 +19,7 @@ import { MessageComposer, MessageThread } from "@/components/portal/MessageThrea
 import { requireAdmin } from "@/lib/dal";
 import { CallNowButton } from "@/components/admin/CallNowButton";
 import { DiscoveryCallCard } from "@/components/admin/DiscoveryCallCard";
+import { SessionRequestButtons } from "@/components/admin/SessionRequestButtons";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { workshopBookingsFor } from "@/lib/attendees";
 import { appointmentAttendance, isNoShow } from "@/lib/attendance";
@@ -280,6 +281,8 @@ function SessionList({
     cancelledAt: Date | null;
     cancelledBy: Appointment["cancelledBy"];
     bookedBy: Appointment["bookedBy"];
+    awaitingApproval: boolean;
+    approvedAt: Date | null;
   }[];
   clientId: number;
   packageNames: Map<number, string>;
@@ -289,46 +292,58 @@ function SessionList({
 }) {
   return (
     <ul className="pt-sessions">
-      {sessions.map((s) => (
-        <li key={s.id} className={`pt-session ${s.cancelledAt ? "is-cancelled" : ""}`}>
-          <div>
-            <p className="pt-session-title">{s.title}</p>
-            <p className="pt-muted pt-small">
-              {s.cancelledAt && `Cancelled by ${s.cancelledBy === "admin" ? "you" : "client"} · `}
-              {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
-              {formatDateTime(s.startsAt)} · {s.durationMinutes} min
-              {attendanceLabels.get(s.id) && ` · ${attendanceLabels.get(s.id)}`}
-              {s.locationMode === "phone" && ` · Phone call${s.inviteePhone ? ` (${s.inviteePhone})` : ""}`}
-              {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
-              {" · "}
-              <Link href={`/admin/sessions/${s.id}`} className="pt-link">
-                Notes
-              </Link>
-              {s.meetingUrl && (
-                <>
-                  {" · "}
-                  <a href={hostLinks.get(s.id) ?? s.meetingUrl} className="pt-link" target="_blank" rel="noreferrer">
-                    Meeting link
-                  </a>
-                </>
+      {sessions.map((s) => {
+        const request = s.awaitingApproval && !s.approvedAt;
+        const pending = request && !s.cancelledAt;
+        return (
+          <li key={s.id} className={`pt-session ${s.cancelledAt ? "is-cancelled" : ""}`}>
+            <div>
+              <p className="pt-session-title">
+                {s.title} {pending && <span className="pt-badge is-warn">Awaiting your approval</span>}
+              </p>
+              <p className="pt-muted pt-small">
+                {s.cancelledAt &&
+                  (request
+                    ? s.cancelledBy === "client"
+                      ? "Request withdrawn by client · "
+                      : "Request declined · "
+                    : `Cancelled by ${s.cancelledBy === "admin" ? "you" : "client"} · `)}
+                {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
+                {formatDateTime(s.startsAt)} · {s.durationMinutes} min
+                {attendanceLabels.get(s.id) && ` · ${attendanceLabels.get(s.id)}`}
+                {s.locationMode === "phone" && ` · Phone call${s.inviteePhone ? ` (${s.inviteePhone})` : ""}`}
+                {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
+                {" · "}
+                <Link href={`/admin/sessions/${s.id}`} className="pt-link">
+                  Notes
+                </Link>
+                {s.meetingUrl && (
+                  <>
+                    {" · "}
+                    <a href={hostLinks.get(s.id) ?? s.meetingUrl} className="pt-link" target="_blank" rel="noreferrer">
+                      Meeting link
+                    </a>
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="pt-session-admin">
+              {pending && <SessionRequestButtons sessionId={s.id} label="this request" />}
+              {!s.cancelledAt && !pending && (
+                <form action={cancelSessionAsAdmin.bind(null, s.id, clientId)}>
+                  <ConfirmSubmit
+                    label="Cancel"
+                    confirmText={`Cancel "${s.title}"? The client is emailed and any package session is returned.`}
+                  />
+                </form>
               )}
-            </p>
-          </div>
-          <div className="pt-session-admin">
-            {!s.cancelledAt && (
-              <form action={cancelSessionAsAdmin.bind(null, s.id, clientId)}>
-                <ConfirmSubmit
-                  label="Cancel"
-                  confirmText={`Cancel "${s.title}"? The client is emailed and any package session is returned.`}
-                />
+              <form action={deleteSession.bind(null, s.id, clientId)}>
+                <ConfirmSubmit label="Remove" confirmText={`Remove "${s.title}" completely? Nothing is emailed.`} />
               </form>
-            )}
-            <form action={deleteSession.bind(null, s.id, clientId)}>
-              <ConfirmSubmit label="Remove" confirmText={`Remove "${s.title}" completely? Nothing is emailed.`} />
-            </form>
-          </div>
-        </li>
-      ))}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

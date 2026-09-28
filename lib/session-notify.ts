@@ -4,7 +4,14 @@ import { appUrl } from "@/lib/app-url";
 import { manageUrl } from "@/lib/appointments";
 import { getDb } from "@/lib/db";
 import { clients, coachingSessions, users, type Appointment } from "@/lib/db/schema";
-import { emailAdminBooking, emailSessionBooked, emailSessionCancelled, emailSessionRescheduled } from "@/lib/email";
+import {
+  emailAdminBooking,
+  emailSessionBooked,
+  emailSessionCancelled,
+  emailSessionDeclined,
+  emailSessionRequested,
+  emailSessionRescheduled,
+} from "@/lib/email";
 import { icsAttachment } from "@/lib/ics";
 import { guestJoinUrl, hostJoinUrl } from "@/lib/join";
 import { callPhone, joinNote } from "@/lib/meeting";
@@ -48,6 +55,8 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
     .limit(1);
   if (!row) return;
   const { session } = row;
+  // A client's request Monika hasn't approved yet: no calendar invites until she does.
+  const pending = session.awaitingApproval && !session.approvedAt;
   const organizerEmail = process.env.EMAIL_REPLY_TO?.trim() || undefined;
 
   const phone = callPhone(session);
@@ -77,9 +86,10 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
       meetingUrl: session.meetingUrl,
       joinUrl,
       phone,
-      attachments: [ics(joinUrl)],
+      attachments: pending ? [] : [ics(joinUrl)],
     };
-    if (change === "booked") await emailSessionBooked(base);
+    if (pending && change !== "cancelled") await emailSessionRequested({ ...base, moved: change === "rescheduled" });
+    else if (change === "booked") await emailSessionBooked(base);
     else if (change === "rescheduled") await emailSessionRescheduled(base);
     else await emailSessionCancelled({ ...base, byClient: actor === "client" });
   }
@@ -87,7 +97,17 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
   if (actor !== "admin") {
     const to = await adminEmails();
     if (to.length) {
-      const verb = change === "booked" ? "booked" : change === "rescheduled" ? "moved" : "cancelled";
+      const verb = pending
+        ? change === "booked"
+          ? "requested"
+          : change === "rescheduled"
+            ? "moved their request for"
+            : "withdrew their request for"
+        : change === "booked"
+          ? "booked"
+          : change === "rescheduled"
+            ? "moved"
+            : "cancelled";
       const [url, buttonLabel] = session.clientId
         ? [`/admin/clients/${session.clientId}#sessions`, "Open client"]
         : session.discoveryCallId
@@ -96,19 +116,37 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
       const hostUrl = await hostJoinUrl(session, "");
       await emailAdminBooking({
         to,
-        subject: `${who} ${verb} ${session.discoveryCallId && !session.clientId ? `a ${session.title.toLowerCase()}` : "a session"}`,
+        subject: `${who} ${verb} ${session.discoveryCallId && !session.clientId ? `a ${session.title.toLowerCase()}` : "a session"}${pending && change !== "cancelled" ? " — please approve" : ""}`,
         lines: [
           `${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`,
+          ...(pending && change !== "cancelled"
+            ? ["It isn't confirmed until you approve it. The time is held and a package session is set aside meanwhile."]
+            : []),
           ...(phone && change !== "cancelled" ? [`Phone call — ring ${who} on ${phone}.`] : []),
-          ...(hostUrl && change !== "cancelled" ? [`Join: ${hostUrl}`] : []),
-          ...(change !== "cancelled" && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
+          ...(hostUrl && change !== "cancelled" && !pending ? [`Join: ${hostUrl}`] : []),
+          ...(change !== "cancelled" && !pending && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
         ],
-        url: await appUrl(url),
-        buttonLabel,
-        attachments: [ics(hostUrl, true)],
+        url: await appUrl(pending && change !== "cancelled" ? "/admin#requests" : url),
+        buttonLabel: pending && change !== "cancelled" ? "Approve or decline" : buttonLabel,
+        attachments: pending ? [] : [ics(hostUrl, true)],
       });
     }
   }
+}
+
+/** Tells the client Monika declined their request (or it lapsed unapproved). */
+export async function notifySessionDeclined(sessionId: number, { expired = false } = {}) {
+  const [session] = await getDb().select().from(coachingSessions).where(eq(coachingSessions.id, sessionId)).limit(1);
+  if (!session) return;
+  const recipient = await appointmentRecipient(session);
+  if (!recipient) return;
+  await emailSessionDeclined({
+    ...recipient,
+    title: session.title,
+    startsAt: session.startsAt,
+    durationMinutes: session.durationMinutes,
+    expired,
+  });
 }
 
 /** Older name, used by the portal booking actions. */

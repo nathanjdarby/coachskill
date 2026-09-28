@@ -69,7 +69,7 @@ export async function buildCalendarFeed(now = new Date()) {
         sequence: a.icsSequence,
         start: a.startsAt,
         durationMinutes: a.durationMinutes,
-        title: who ? `${a.title}: ${who}` : a.title,
+        title: `${a.awaitingApproval && !a.approvedAt ? "[To approve] " : ""}${who ? `${a.title}: ${who}` : a.title}`,
         description: [who && `With ${who}${a.inviteeEmail && !clientName ? ` (${a.inviteeEmail})` : ""}`, `Coach Skill: ${adminLink}`]
           .filter(Boolean)
           .join("\n"),

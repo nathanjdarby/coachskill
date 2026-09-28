@@ -68,11 +68,14 @@ export default async function PortalHomePage() {
             <h2>Next session</h2>
             {next ? (
               <>
-                <p className="pt-session-title">{next.title}</p>
+                <p className="pt-session-title">
+                  {next.title}{" "}
+                  {next.awaitingApproval && !next.approvedAt && <span className="pt-badge is-warn">Awaiting confirmation</span>}
+                </p>
                 <p className="pt-muted">
                   {formatDateTime(next.startsAt)} (UK time) · {next.durationMinutes} min
                 </p>
-                {next.meetingUrl && (
+                {next.meetingUrl && !(next.awaitingApproval && !next.approvedAt) && (
                   <div className="pt-mt">
                     <JoinButton
                       url={(await guestJoinUrl(next, user.name))!}

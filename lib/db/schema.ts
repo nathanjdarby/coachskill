@@ -304,6 +304,12 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   durationMinutes: integer("duration_minutes").notNull(),
   meetingUrl: text("meeting_url"),
   bookedBy: text("booked_by", { enum: ["admin", "client", "invitee"] }).notNull().default("admin"),
+  /**
+   * A client's own booking waits for Monika to approve it. The slot and package credit
+   * are held meanwhile; declining cancels it (and it stays flagged, so it reads "Declined").
+   */
+  awaitingApproval: integer("awaiting_approval", { mode: "boolean" }).notNull().default(false),
+  approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
   /** Cancelled sessions stay for the record but free the slot and the package credit. */
   cancelledAt: integer("cancelled_at", { mode: "timestamp_ms" }),
   cancelledBy: text("cancelled_by", { enum: ["admin", "client", "invitee"] }),

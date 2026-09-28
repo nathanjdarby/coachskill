@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import { appUrl } from "@/lib/app-url";
 import { appointmentAttendance, isNoShow } from "@/lib/attendance";
-import { creditPackageSync } from "@/lib/booking";
+import { creditPackageSync, isConfirmed } from "@/lib/booking";
 import { getDb } from "@/lib/db";
 import { clientNotes, coachingSessions, users, type Appointment } from "@/lib/db/schema";
 import { emailSessionFollowUp } from "@/lib/email";
@@ -109,6 +109,7 @@ export async function sendDueFollowUps(now: Date) {
     .where(
       and(
         isNull(coachingSessions.cancelledAt),
+        isConfirmed(),
         isNull(coachingSessions.followUpSentAt),
         eq(coachingSessions.followUpEnabled, true),
         lte(sql`${coachingSessions.startsAt} + ${coachingSessions.durationMinutes} * 60000`, endedBefore),
