@@ -38,7 +38,7 @@ export default function MeetMonikaPage() {
                   communication and impactful presentations, with over 18 years&apos;
                   international experience across the UK, Asia and the USA.
                 </p>
-                <Link href="/workshop" className="cta cta-hero meet-monika-hero-cta">
+                <Link href="/workshop/value-selling" className="cta cta-hero meet-monika-hero-cta">
                   See the Value Selling Workshop <span aria-hidden>→</span>
                 </Link>
               </div>
@@ -158,7 +158,7 @@ export default function MeetMonikaPage() {
               Join Monika&apos;s focused 2.5-hour workshop and transform how you
               pitch—from feature-heavy explanations to value-led storytelling.
             </p>
-            <Link href="/workshop" className="cta cta-hero">
+            <Link href="/workshop/value-selling" className="cta cta-hero">
               Secure your place — £25 deposit
             </Link>
           </div>

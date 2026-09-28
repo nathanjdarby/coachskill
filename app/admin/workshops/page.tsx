@@ -1,129 +1,93 @@
 import Link from "next/link";
-import { NEW_WORKSHOP, WorkshopForm } from "@/components/admin/WorkshopForm";
+import { NEW_PROGRAMME, ProgrammeForm } from "@/components/admin/ProgrammeForm";
+import { toChoice, WorkshopDates } from "@/components/admin/WorkshopDatesTable";
+import { WorkshopForm } from "@/components/admin/WorkshopForm";
+import { NEW_WORKSHOP } from "@/lib/workshop-form";
 import { requireAdmin } from "@/lib/dal";
-import { workshopHostJoinUrl } from "@/lib/join";
-import { formatPence } from "@/lib/money";
-import { formatDateTime, toLondonInputValue } from "@/lib/time";
-import { listWorkshopsForAdmin } from "@/lib/workshops";
+import { formatDateTime } from "@/lib/time";
+import { categoryLabel } from "@/lib/workshop-categories";
+import { listProgrammesForAdmin, listWorkshopsForAdmin } from "@/lib/workshops";
 
 export default async function AdminWorkshopsPage() {
-  const admin = await requireAdmin();
-  const runs = await listWorkshopsForAdmin();
-  const hostLinks = new Map(await Promise.all(runs.map(async (w) => [w.id, await workshopHostJoinUrl(w, admin.name)] as const)));
+  await requireAdmin();
+  const [programmes, runs] = await Promise.all([listProgrammesForAdmin(), listWorkshopsForAdmin()]);
 
   return (
     <div className="pt-page">
       <div className="pt-page-head">
         <h1>Workshops</h1>
         <p className="pt-muted">
-          Each date is its own run. Balance links are emailed automatically a week before, with a reminder 3 days
-          before.
+          Each workshop has its own public page on{" "}
+          <Link href="/workshop" className="pt-link" target="_blank">
+            /workshop
+          </Link>
+          , and can run on as many dates as you like. Balance links are emailed automatically a week before each date,
+          with a reminder 3 days before.
         </p>
       </div>
 
+      <h2 className="pt-subhead">Your workshops</h2>
+      {programmes.length === 0 ? (
+        <section className="pt-card">
+          <p className="pt-muted">No workshops yet — add your first one below.</p>
+        </section>
+      ) : (
+        <div className="pt-table-wrap">
+          <table className="pt-table pt-table-stack">
+            <thead>
+              <tr>
+                <th>Workshop</th>
+                <th>Page</th>
+                <th>Next date</th>
+                <th>Upcoming dates</th>
+              </tr>
+            </thead>
+            <tbody>
+              {programmes.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <Link href={`/admin/workshops/${p.id}`} className="pt-table-title">
+                      {p.title}
+                    </Link>
+                    <span className="pt-muted pt-small pt-block">{categoryLabel(p.category)}</span>
+                  </td>
+                  <td data-label="Page">
+                    <span className={`pt-badge ${p.published ? "is-ok" : "is-warn"}`}>{p.published ? "Published" : "Draft"}</span>
+                  </td>
+                  <td className="pt-small" data-label="Next date">
+                    {p.upcoming[0]?.startsAt ? formatDateTime(p.upcoming[0].startsAt) : <span className="pt-muted">—</span>}
+                  </td>
+                  <td data-label="Upcoming dates">{p.upcoming.length || <span className="pt-muted">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <details className="pt-card pt-details">
         <summary>
-          <span className="pt-details-title">Add a workshop date</span>
-          <span className="pt-muted pt-small">Set the date, places and prices</span>
+          <span className="pt-details-title">Add a workshop</span>
+          <span className="pt-muted pt-small">Choose the type, write the details and its page is created for you</span>
         </summary>
         <div className="pt-details-body">
-          <WorkshopForm id={null} initial={NEW_WORKSHOP} />
+          <ProgrammeForm id={null} initial={NEW_PROGRAMME} />
         </div>
       </details>
 
-      {runs.length === 0 && (
-        <section className="pt-card">
-          <p className="pt-muted">No workshops yet.</p>
-        </section>
+      <h2 className="pt-subhead">All dates</h2>
+      {programmes.length > 0 && (
+        <details className="pt-card pt-details">
+          <summary>
+            <span className="pt-details-title">Add a date</span>
+            <span className="pt-muted pt-small">Pick the workshop, then set the date, places and prices</span>
+          </summary>
+          <div className="pt-details-body">
+            <WorkshopForm id={null} initial={NEW_WORKSHOP} programmes={programmes.map(toChoice)} />
+          </div>
+        </details>
       )}
-
-      {runs.map((w) => {
-        const { past } = w;
-        return (
-          <section key={w.id} className="pt-card pt-workshop">
-            <div className="pt-card-head">
-              <h2>{w.name}</h2>
-              <span className={`pt-badge ${past ? "" : w.published ? "is-ok" : "is-warn"}`}>
-                {past ? "Past" : w.published ? "On sale" : w.startsAt ? "Hidden" : "No date"}
-              </span>
-            </div>
-            <p className="pt-muted">
-              {w.startsAt ? `${formatDateTime(w.startsAt)} (UK)` : "No date set"}
-              {w.location ? ` · ${w.location}` : ""}
-            </p>
-            {w.locationMode !== "in_person" && (
-              <p className="pt-small">
-                {w.meetingUrl ? (
-                  <>
-                    <span className="pt-muted">Join link: </span>
-                    <a href={hostLinks.get(w.id) ?? w.meetingUrl} className="pt-link" target="_blank" rel="noopener noreferrer">
-                      {w.meetingUrl.replace(/^https:\/\//, "")}
-                    </a>
-                  </>
-                ) : (
-                  <span className="pt-muted">Online — add the meeting link</span>
-                )}
-              </p>
-            )}
-
-            <dl className="pt-workshop-stats">
-              <div>
-                <dt>Places</dt>
-                <dd>
-                  {w.seatsTaken}
-                  {w.capacity != null ? ` / ${w.capacity}` : ""}
-                </dd>
-              </div>
-              <div>
-                <dt>Fully paid</dt>
-                <dd>{w.balancePaid}</dd>
-              </div>
-              <div>
-                <dt>Awaiting balance</dt>
-                <dd>{w.balanceRequested}</dd>
-              </div>
-              <div>
-                <dt>Collected</dt>
-                <dd>{formatPence(w.paidPence)}</dd>
-              </div>
-            </dl>
-
-            <p className="pt-small pt-muted">
-              Deposit {formatPence(w.depositPence)} · Balance {formatPence(w.balancePence)}
-            </p>
-
-            <div className="pt-workshop-actions">
-              <Link href={`/admin/signups?workshop=${w.id}`} className="pt-btn pt-btn-secondary">
-                View signups
-              </Link>
-            </div>
-
-            <details className="pt-details pt-details-inline">
-              <summary>
-                <span className="pt-details-title">Edit</span>
-              </summary>
-              <div className="pt-details-body">
-                <WorkshopForm
-                  id={w.id}
-                  initial={{
-                    name: w.name,
-                    slug: w.slug,
-                    startsAt: w.startsAt ? toLondonInputValue(w.startsAt) : "",
-                    durationMinutes: String(w.durationMinutes),
-                    location: w.location ?? "",
-                    locationMode: w.locationMode,
-                    meetingUrl: w.locationMode === "custom" ? (w.meetingUrl ?? "") : "",
-                    capacity: w.capacity == null ? "" : String(w.capacity),
-                    deposit: String(w.depositPence / 100),
-                    balance: String(w.balancePence / 100),
-                    published: w.published,
-                  }}
-                />
-              </div>
-            </details>
-          </section>
-        );
-      })}
+      <WorkshopDates runs={runs} emptyText="No upcoming dates." />
 
       <p className="pt-small pt-muted">
         <Link href="/admin/signups" className="pt-link">

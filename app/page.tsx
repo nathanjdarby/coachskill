@@ -109,14 +109,16 @@ export default function Home() {
         <section className="section home-final">
           <div className="container home-narrow home-center">
             <h2 className="section-title">
-              Ready to <span>start?</span>
+              Prefer a <span>group session?</span>
             </h2>
             <p className="section-lead">
-              Join the Value Selling Workshop: 2.5 hours in a small group of up
-              to 5, with personal feedback on your pitch.
+              Monika runs expert-led workshops for small groups of up to 5 — on
+              value selling, leadership, presenting, negotiation and more. Hands-on
+              practice, personal feedback on your own work, and skills you can use
+              the very next day.
             </p>
             <Link href="/workshop" className="cta cta-hero">
-              See the Value Selling Workshop <span aria-hidden>→</span>
+              Explore upcoming workshops <span aria-hidden>→</span>
             </Link>
             <div className="home-links">
               <Link href="/workshop#teams" className="home-secondary-link">

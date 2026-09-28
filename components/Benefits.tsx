@@ -1,50 +1,9 @@
 "use client";
 
+import type { WorkshopPoint } from "@/lib/workshop-categories";
 import { useEffect, useRef, useState } from "react";
 
-const BENEFITS = [
-  {
-    icon: "↑",
-    title: "Pitch for results",
-    description: (
-      <>
-        Pitch in a way that can{" "}
-        <span className="highlight-stat">increase your sales by up to 30%</span>.
-      </>
-    ),
-  },
-  {
-    icon: "◇",
-    title: "Clear structure",
-    description:
-      "A clear value-selling pitch structure that guides the customer through the conversation.",
-  },
-  {
-    icon: "◇",
-    title: "Engaged customers",
-    description:
-      "Keep customers engaged throughout the entire pitch, not just at the start.",
-  },
-  {
-    icon: "◇",
-    title: "Value-led storytelling",
-    description:
-      "Replace feature-heavy explanations with value-led storytelling.",
-  },
-  {
-    icon: "◇",
-    title: "Greater confidence",
-    description: "Build greater confidence in customer conversations.",
-  },
-  {
-    icon: "◇",
-    title: "Simple language",
-    description:
-      "Use simple, human language so customers instantly understand what you're offering.",
-  },
-];
-
-export function Benefits() {
+export function Benefits({ outcomes }: { outcomes: WorkshopPoint[] }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [visibleIndices, setVisibleIndices] = useState<Set<number>>(new Set());
 
@@ -68,7 +27,7 @@ export function Benefits() {
     );
     cards.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [outcomes]);
 
   return (
     <section className="section">
@@ -77,13 +36,13 @@ export function Benefits() {
           What will you <span>achieve</span>?
         </h2>
         <div className="benefits-grid" ref={gridRef}>
-          {BENEFITS.map((benefit, i) => (
+          {outcomes.map((benefit, i) => (
             <article
-              key={benefit.title}
+              key={`${i}-${benefit.title}`}
               className={`benefit-card ${visibleIndices.has(i) ? "is-visible" : ""}`}
               data-card-index={i}
             >
-              <div className="icon">{benefit.icon}</div>
+              <div className="icon">{i === 0 ? "↑" : "◇"}</div>
               <h3>{benefit.title}</h3>
               <p>{benefit.description}</p>
             </article>

@@ -3468,3 +3468,167 @@ a.workshop-when-more {
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
+
+/* Workshop listing */
+.workshops-listing {
+  padding-top: 48px;
+}
+
+.workshops-eyebrow {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.workshops-listing .section-title {
+  margin-bottom: 16px;
+}
+
+.workshops-lead {
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.workshops-empty {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.workshop-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 24px;
+}
+
+.workshop-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.workshop-card:hover,
+.workshop-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5), 0 0 30px -10px var(--glow-blue);
+}
+
+.workshop-card-media {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.workshop-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.workshop-card-media .workshop-art {
+  height: 100%;
+  border-radius: 0;
+}
+
+.workshop-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+}
+
+.workshop-card-body h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.workshop-card-summary {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.workshop-card-when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.workshop-card-when span {
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.workshop-card-when .is-low {
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fbbf24;
+}
+
+.workshop-card-when .is-full {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+.workshop-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.workshop-card-link {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+/* Stand-in artwork for a workshop without an image */
+.workshop-art {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  aspect-ratio: 3 / 2;
+  padding: 28px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.45), transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(37, 99, 235, 0.55), transparent 50%),
+    linear-gradient(145deg, #0f1c33 0%, #0b1424 100%);
+}
+
+.workshop-art-category {
+  color: var(--accent-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.workshop-art-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.workshop-hero .eyebrow {
+  margin-bottom: 8px;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { type PointerEvent, useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -353,9 +354,9 @@ export default function LandingPage() {
                   <li>A network of peers who hold you to it</li>
                 </ul>
                 <p className="option-note">
-                  Training a team? <a href="/workshop#teams">Book a private group session</a>.
+                  Training a team? <Link href="/workshop#teams">Book a private group session</Link>.
                 </p>
-                <a className="cta" href="/workshop">See the Value Selling Workshop</a>
+                <Link className="cta" href="/workshop">See upcoming workshops</Link>
               </article>
 
               <article className="option-card">

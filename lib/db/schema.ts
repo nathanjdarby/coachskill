@@ -6,9 +6,42 @@ import {
   index,
 } from "drizzle-orm/sqlite-core";
 
+/**
+ * A workshop Monika offers (Value Selling, Leadership…): the content of its
+ * public page and the defaults for new dates. Each date is a `workshops` row.
+ */
+export const workshopProgrammes = sqliteTable("workshop_programmes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  slug: text("slug").notNull().unique(),
+  /** One of WORKSHOP_CATEGORIES in lib/workshop-categories.ts. */
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  /** One line for the listing card. */
+  summary: text("summary").notNull().default(""),
+  /** The hero paragraph on the workshop's page. */
+  intro: text("intro").notNull().default(""),
+  /** JSON [{title, description}] for "What will you achieve?". */
+  outcomesJson: text("outcomes_json").notNull().default("[]"),
+  /** JSON [{title, description}] for "Workshop details". */
+  highlightsJson: text("highlights_json").notNull().default("[]"),
+  /** An uploaded image (storage key), or a path under /public. */
+  imageKey: text("image_key"),
+  showTeamSection: integer("show_team_section", { mode: "boolean" }).notNull().default(true),
+  /** Defaults copied into each new date. */
+  durationMinutes: integer("duration_minutes").notNull().default(150),
+  capacity: integer("capacity"),
+  depositPence: integer("deposit_pence").notNull().default(2500),
+  balancePence: integer("balance_pence").notNull().default(37400),
+  /** Only published workshops have a public page. */
+  published: integer("published", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+});
+
 /** One row per dated workshop run (the slug is per run). */
 export const workshops = sqliteTable("workshops", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  programmeId: integer("programme_id").references(() => workshopProgrammes.id),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   stripePriceId: text("stripe_price_id"),
@@ -112,6 +145,7 @@ export const stripeEvents = sqliteTable("stripe_events", {
 });
 
 export type Workshop = typeof workshops.$inferSelect;
+export type WorkshopProgramme = typeof workshopProgrammes.$inferSelect;
 export type Signup = typeof signups.$inferSelect;
 export type NewSignup = typeof signups.$inferInsert;
 export type DiscoveryCall = typeof discoveryCalls.$inferSelect;

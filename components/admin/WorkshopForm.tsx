@@ -3,49 +3,56 @@
 import { useActionState, useState } from "react";
 import { saveWorkshop } from "@/app/actions/workshops";
 import { FieldError, FormMessage, SubmitButton } from "@/components/portal/FormBits";
+import { newDateFor, type ProgrammeChoice, type WorkshopFormValues } from "@/lib/workshop-form";
 
-export type WorkshopFormValues = {
-  name: string;
-  slug: string;
-  startsAt: string;
-  durationMinutes: string;
-  location: string;
-  locationMode: "jitsi" | "custom" | "in_person";
-  meetingUrl: string;
-  capacity: string;
-  deposit: string;
-  balance: string;
-  published: boolean;
-};
-
-export const NEW_WORKSHOP: WorkshopFormValues = {
-  name: "Value Selling Workshop",
-  slug: "",
-  startsAt: "",
-  durationMinutes: "150",
-  location: "",
-  locationMode: "jitsi",
-  meetingUrl: "",
-  capacity: "5",
-  deposit: "25",
-  balance: "374",
-  published: true,
-};
-
-export function WorkshopForm({ id, initial }: { id: number | null; initial: WorkshopFormValues }) {
+export function WorkshopForm({
+  id,
+  initial,
+  programmes,
+}: {
+  id: number | null;
+  initial: WorkshopFormValues;
+  programmes: ProgrammeChoice[];
+}) {
   const [state, action] = useActionState(saveWorkshop.bind(null, id), undefined);
-  const f = state?.fields;
-  const v = (key: keyof WorkshopFormValues) => (f?.[key] ?? String(initial[key]));
+  // Choosing a workshop for a new date swaps in that workshop's defaults,
+  // until the next submit brings back what was entered.
+  const [picked, setPicked] = useState<{ values: WorkshopFormValues; state: typeof state } | null>(null);
+  const base = picked?.values ?? initial;
+  const f = picked && picked.state === state ? undefined : state?.fields;
+  const v = (key: keyof WorkshopFormValues) => (f?.[key] ?? String(base[key]));
   const p = id == null ? "new" : `w${id}`;
   const submittedMode = f?.locationMode as WorkshopFormValues["locationMode"] | undefined;
-  const [mode, setMode] = useState(submittedMode ?? initial.locationMode);
+  const [mode, setMode] = useState(submittedMode ?? base.locationMode);
 
   return (
-    <form action={action} className="pt-form" key={id == null && state?.ok ? "reset" : "edit"}>
+    <form action={action} className="pt-form" key={`${id == null && state?.ok ? "reset" : "edit"}-${base.programmeId}`}>
       <div className="pt-field">
-        <label htmlFor={`${p}-name`}>Name</label>
-        <input id={`${p}-name`} name="name" defaultValue={v("name")} maxLength={120} required />
-        <FieldError state={state} name="name" />
+        <label htmlFor={`${p}-programmeId`}>Workshop</label>
+        <select
+          id={`${p}-programmeId`}
+          name="programmeId"
+          defaultValue={v("programmeId")}
+          required
+          onChange={(e) => {
+            const choice = programmes.find((c) => String(c.id) === e.target.value);
+            if (id == null && choice) setPicked({ values: newDateFor(choice), state });
+          }}
+        >
+          <option value="" disabled>
+            Choose a workshop…
+          </option>
+          {programmes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </select>
+        <FieldError state={state} name="programmeId" />
+      </div>
+      <div className="pt-field">
+        <label htmlFor={`${p}-name`}>Name on emails and invites (optional)</label>
+        <input id={`${p}-name`} name="name" defaultValue={v("name")} maxLength={120} placeholder="The workshop's title if blank" />
       </div>
       <div className="pt-field-grid">
         <div className="pt-field">
@@ -64,8 +71,8 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
         <select
           id={`${p}-locationMode`}
           name="locationMode"
-          key={`loc-${submittedMode ?? initial.locationMode}`}
-          defaultValue={submittedMode ?? initial.locationMode}
+          key={`loc-${submittedMode ?? base.locationMode}`}
+          defaultValue={submittedMode ?? base.locationMode}
           onChange={(e) => setMode(e.target.value as WorkshopFormValues["locationMode"])}
         >
           <option value="jitsi">Online — automatic private video room</option>
@@ -116,7 +123,7 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
         <FieldError state={state} name="slug" />
       </div>
       <label className="pt-check">
-        <input type="checkbox" name="published" defaultChecked={f ? f.published === "on" : initial.published} />
+        <input type="checkbox" name="published" defaultChecked={f ? f.published === "on" : base.published} />
         <span>Show on the public workshop page</span>
       </label>
       {id != null && (
@@ -126,7 +133,7 @@ export function WorkshopForm({ id, initial }: { id: number | null; initial: Work
         </label>
       )}
       <FormMessage state={state} />
-      <SubmitButton>{id == null ? "Create workshop" : "Save changes"}</SubmitButton>
+      <SubmitButton>{id == null ? "Add date" : "Save changes"}</SubmitButton>
     </form>
   );
 }

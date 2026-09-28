@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { getWorkshopBySlug } from "@/lib/db/queries";
 import type { Workshop } from "@/lib/db/schema";
 import { getStripe, STANDARD_PAYMENTS } from "@/lib/stripe";
-import { featuredWorkshop, seatsTaken } from "@/lib/workshops";
+import { featuredWorkshop, seatsTaken, workshopPagePath } from "@/lib/workshops";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error }, { status: 409 });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const workshopUrl = `${baseUrl.replace(/\/+$/, "")}/workshop`;
+    const workshopUrl = `${baseUrl.replace(/\/+$/, "")}${workshop ? await workshopPagePath(workshop) : "/workshop"}`;
     // Without a dated run, fall back to the original single-workshop setup.
     const slug = workshop?.slug ?? (process.env.DEFAULT_WORKSHOP_SLUG?.trim() || "value-selling");
     const priceId = process.env.STRIPE_PRICE_ID?.trim();

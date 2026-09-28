@@ -448,6 +448,8 @@ header.pt-topbar {
 .pt-field input,
 .pt-field select,
 .pt-field textarea,
+.pt-point input,
+.pt-point textarea,
 .pt-composer textarea,
 .pt-copy input {
   width: 100%;
@@ -462,6 +464,7 @@ header.pt-topbar {
 }
 
 .pt-field textarea,
+.pt-point textarea,
 .pt-composer textarea {
   resize: vertical;
   line-height: 1.5;
@@ -470,6 +473,8 @@ header.pt-topbar {
 .pt-field input:focus,
 .pt-field select:focus,
 .pt-field textarea:focus,
+.pt-point input:focus,
+.pt-point textarea:focus,
 .pt-composer textarea:focus {
   outline: none;
   border-color: var(--accent-blue);
@@ -995,6 +1000,58 @@ header.pt-topbar {
 }
 
 /* Admin: workshops */
+.pt-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.pt-fieldset legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+
+.pt-fieldset > .pt-btn {
+  align-self: flex-start;
+}
+
+.pt-point {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pt-point-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pt-point-actions .pt-btn {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.pt-self-start {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.pt-programme-image {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
 @media (min-width: 560px) {
   .pt-field-grid-3 {
     grid-template-columns: repeat(3, 1fr);
