@@ -8,6 +8,8 @@ import { formatDateTime } from "@/lib/time";
 // fall back to showing links on screen.
 
 const DEFAULT_FROM = "Monika at Coach Skill <monika@mail.coachskill.co.uk>";
+// Always the live site, so the image loads in inboxes even for emails sent from dev.
+const LOGO_URL = "https://coachskill.co.uk/assets/coach-skill-logo.png";
 
 export type SendResult = { ok: true } | { ok: false; reason: "not_configured" | "failed" };
 
@@ -93,7 +95,10 @@ function renderHtml(input: { heading: string; paragraphs: string[]; button?: { l
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:36px">
 <tr><td>
-<p style="margin:0 0 24px;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#0891b2">Coach Skill</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px"><tr>
+<td style="padding-right:12px;vertical-align:middle"><img src="${LOGO_URL}" width="40" height="40" alt="Coach Skill" border="0" style="display:block;border:0;outline:none;width:40px;height:40px"></td>
+<td style="vertical-align:middle;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#0891b2">Coach Skill</td>
+</tr></table>
 <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:#0f172a">${escapeHtml(input.heading)}</h1>
 ${input.paragraphs.map(p).join("")}
 ${button}
