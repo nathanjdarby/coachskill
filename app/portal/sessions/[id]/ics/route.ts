@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { coachingSessions } from "@/lib/db/schema";
 import { buildIcs } from "@/lib/ics";
 import { guestJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 
 /** "Add to calendar": the client's own session as an .ics file. */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     durationMinutes: session.durationMinutes,
     title: `${session.title} with Monika`,
     url: await guestJoinUrl(session, null),
+    location: callPhone(session) ? `Phone call — Monika will ring ${callPhone(session)}` : null,
   });
   return new NextResponse(ics, {
     headers: {

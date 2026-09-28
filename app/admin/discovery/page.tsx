@@ -4,7 +4,9 @@ import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/Dis
 import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
 import { availableSlots, groupSlotsByDay } from "@/lib/booking";
 import { hostJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 import { requireAdmin } from "@/lib/dal";
+import { telHref } from "@/lib/phone";
 import { durationFor, listEventTypes } from "@/lib/event-types";
 import { enquirySubtitle } from "@/lib/discovery";
 import { listDiscoveryCallsWithClients } from "@/lib/portal";
@@ -69,6 +71,16 @@ export default async function AdminDiscoveryPage() {
                     {call.email}
                   </a>
                 </dd>
+                {call.phone && (
+                  <>
+                    <dt>Phone</dt>
+                    <dd>
+                      <a href={telHref(call.phone)} className="pt-link">
+                        {call.phone}
+                      </a>
+                    </dd>
+                  </>
+                )}
                 <EnquiryAnswers enquiry={call} />
               </dl>
               {!call.declinedAt && (
@@ -82,11 +94,13 @@ export default async function AdminDiscoveryPage() {
                     startsAt: a.startsAt,
                     durationMinutes: a.durationMinutes,
                     meetingUrl: hostLinks.get(a.id) ?? null,
+                    phone: callPhone(a),
                     cancelledAt: a.cancelledAt,
                     upcoming: isUpcoming(a),
                     colour: a.typeColour,
                   }))}
                   link={link && { id: link.id, url: link.url, expiresAt: link.expiresAt }}
+                  phone={call.phone}
                 />
               )}
               <div className="pt-details-actions">

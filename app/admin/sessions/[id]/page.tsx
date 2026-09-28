@@ -8,6 +8,8 @@ import { clients, coachingSessions, eventTypes } from "@/lib/db/schema";
 import { FOLLOW_UP_DELAY_MIN, composeFollowUp, endOf } from "@/lib/follow-up";
 import { appointmentAttendance, isNoShow } from "@/lib/attendance";
 import { hostJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
+import { telHref } from "@/lib/phone";
 import { formatDateTime } from "@/lib/time";
 
 export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +72,14 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
+      {!a.cancelledAt && callPhone(a) && (
+        <p>
+          <a href={telHref(callPhone(a)!)} className="pt-btn pt-btn-primary">
+            Call {callPhone(a)}
+          </a>
+          <span className="pt-muted pt-small"> · Phone call — you ring them</span>
+        </p>
+      )}
       {!a.cancelledAt && a.meetingUrl && (
         <p>
           <a

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { FormState } from "@/app/actions/types";
 import { formatDay, formatTime } from "@/lib/time";
+import { CallTypeFields } from "@/components/CallTypeFields";
 import { FormMessage, SubmitButton } from "./FormBits";
 
 export type SlotDay = { date: string; times: string[] };
@@ -12,10 +13,13 @@ export function BookingPicker({
   days,
   action,
   submitLabel,
+  callChoice,
 }: {
   days: SlotDay[];
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   submitLabel: string;
+  /** Ask "video or phone?" (with the number to ring) above the times. */
+  callChoice?: { defaultPhone: string };
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [dayIndex, setDayIndex] = useState(0);
@@ -29,6 +33,7 @@ export function BookingPicker({
 
   return (
     <form action={formAction} className="pt-picker">
+      {callChoice && <CallTypeFields defaultPhone={callChoice.defaultPhone} />}
       <div className="pt-picker-days" role="listbox" aria-label="Choose a day">
         {days.map((d, i) => {
           const label = formatDay(new Date(d.times[0])).split(" ");

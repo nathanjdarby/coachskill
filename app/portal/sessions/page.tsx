@@ -83,6 +83,7 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
                   <p className="pt-session-title">{s.title}</p>
                   <p className="pt-muted pt-small">
                     {formatDateTime(s.startsAt)} · {s.durationMinutes} min
+                    {s.locationMode === "phone" && " · Phone call — Monika will ring you"}
                   </p>
                 </div>
                 {s.meetingUrl && (

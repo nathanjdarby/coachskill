@@ -272,6 +272,8 @@ function SessionList({
     startsAt: Date;
     durationMinutes: number;
     meetingUrl: string | null;
+    locationMode: string;
+    inviteePhone: string | null;
     clientPackageId: number | null;
     cancelledAt: Date | null;
     cancelledBy: Appointment["cancelledBy"];
@@ -294,6 +296,7 @@ function SessionList({
               {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
               {attendanceLabels.get(s.id) && ` · ${attendanceLabels.get(s.id)}`}
+              {s.locationMode === "phone" && ` · Phone call${s.inviteePhone ? ` (${s.inviteePhone})` : ""}`}
               {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
               {" · "}
               <Link href={`/admin/sessions/${s.id}`} className="pt-link">

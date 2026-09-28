@@ -6,6 +6,7 @@ import { appointmentAttendance, isNoShow } from "@/lib/attendance";
 import { externalBusyBetween } from "@/lib/calendar-sync";
 import { londonDate } from "@/lib/time";
 import { hostJoinUrl, workshopHostJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 import { seatsTaken } from "@/lib/workshops";
 
 export type AgendaItem = {
@@ -18,6 +19,8 @@ export type AgendaItem = {
   colour: string;
   joinUrl: string | null;
   allDay?: boolean;
+  /** Phone call: the number to ring. */
+  phone?: string | null;
   /** In-app call attendance: "Waiting now", "Attended · 52 min" or "No-show". */
   status?: { label: string; tone: "ok" | "warn" | "danger" };
   /** Where the admin goes to manage it. */
@@ -60,7 +63,8 @@ export async function listAgenda(from: Date, to: Date, hostName: string): Promis
       start: a.startsAt,
       end: new Date(a.startsAt.getTime() + a.durationMinutes * MINUTE),
       title: a.title,
-      who: [clientName ?? a.inviteeName ?? a.inviteeEmail ?? "—", typeName && typeName !== a.title ? typeName : null]
+      phone: callPhone(a),
+      who: [clientName ?? a.inviteeName ?? a.inviteeEmail ?? "—", typeName && typeName !== a.title ? typeName : null, callPhone(a) ? "Phone call" : null]
         .filter(Boolean)
         .join(" · "),
       colour: colour ?? "#22d3ee",

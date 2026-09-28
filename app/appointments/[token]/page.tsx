@@ -7,6 +7,7 @@ import { SessionActions } from "@/components/portal/SessionActions";
 import { appointmentByToken, isUpcoming } from "@/lib/appointments";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
 import { guestJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = {
@@ -49,7 +50,10 @@ export default async function AppointmentPage({
     >
       {booked && upcoming && (
         <div role="status" className="pt-alert is-ok">
-          <p>You&apos;re booked! We&apos;ve emailed you a calendar invite and the video link.</p>
+          <p>
+            You&apos;re booked! We&apos;ve emailed you a calendar invite
+            {callPhone(a) ? " — Monika will ring you at the time above." : " and the video link."}
+          </p>
         </div>
       )}
       <dl className="pt-dl pt-appt">
@@ -59,10 +63,16 @@ export default async function AppointmentPage({
         </dd>
         <dt>Length</dt>
         <dd>{a.durationMinutes} minutes</dd>
-        {upcoming && (a.meetingUrl || a.locationText) && (
+        {upcoming && (a.meetingUrl || a.locationText || callPhone(a)) && (
           <>
-            <dt>Where</dt>
-            <dd>{a.meetingUrl ? "Video call — use the button below" : a.locationText}</dd>
+            <dt>How</dt>
+            <dd>
+              {callPhone(a)
+                ? `Phone call — Monika will ring you on ${callPhone(a)}`
+                : a.meetingUrl
+                  ? "Video call — use the button below"
+                  : a.locationText}
+            </dd>
           </>
         )}
       </dl>
@@ -77,6 +87,7 @@ export default async function AppointmentPage({
               label="Join the call"
             />
           )}
+          {callPhone(a) && <p className="pt-muted pt-small">Need a different number? Reply to your booking email.</p>}
           {a.meetingUrl && (
             <p className="pt-muted pt-small">
               If you&apos;re early, you&apos;ll wait in a lobby until Monika lets you in.{" "}

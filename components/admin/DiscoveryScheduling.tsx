@@ -5,8 +5,10 @@ import { useActionState, useState, useTransition } from "react";
 import { cancelAppointmentAsAdmin, revokeBookingLink, scheduleDiscoveryCall, sendBookingLink } from "@/app/actions/appointments";
 import type { FormState } from "@/app/actions/types";
 import { CallNowButton } from "@/components/admin/CallNowButton";
+import { CallTypeFields } from "@/components/CallTypeFields";
 import type { SlotDay } from "@/components/portal/BookingPicker";
 import { CopyLink, FieldError, FormMessage, SubmitButton } from "@/components/portal/FormBits";
+import { telHref } from "@/lib/phone";
 import { formatDateTime, formatDay, formatTime } from "@/lib/time";
 
 export type SchedulingType = {
@@ -21,6 +23,8 @@ export type SchedulingAppointment = {
   startsAt: Date;
   durationMinutes: number;
   meetingUrl: string | null;
+  /** Phone call: the number to ring. */
+  phone: string | null;
   cancelledAt: Date | null;
   upcoming: boolean;
   colour: string | null;
@@ -33,12 +37,15 @@ export function DiscoveryScheduling({
   types,
   appointments,
   link,
+  phone,
 }: {
   discoveryCallId: number;
   firstName: string;
   types: SchedulingType[];
   appointments: SchedulingAppointment[];
   link: { id: number; url: string; expiresAt: Date } | null;
+  /** The phone number from their enquiry, if they gave one. */
+  phone?: string | null;
 }) {
   const [panel, setPanel] = useState<"schedule" | "link" | null>(null);
   const [message, setMessage] = useState<FormState>(undefined);
@@ -67,6 +74,7 @@ export function DiscoveryScheduling({
                   <p className="ds-appt-title">{a.title}</p>
                   <p className="pt-muted pt-small">
                     {formatDateTime(a.startsAt)} · {a.durationMinutes} min
+                    {a.phone ? ` · Phone ${a.phone}` : ""}
                     {a.cancelledAt ? " · Cancelled" : upcoming ? "" : " · Done"}
                     {" · "}
                     <Link href={`/admin/sessions/${a.id}`} className="pt-link">
@@ -76,6 +84,11 @@ export function DiscoveryScheduling({
                 </div>
                 {upcoming && (
                   <div className="ds-appt-actions">
+                    {a.phone && (
+                      <a href={telHref(a.phone)} className="pt-btn pt-btn-secondary" title={`Call ${a.phone}`}>
+                        Call
+                      </a>
+                    )}
                     {a.meetingUrl && (
                       <a href={a.meetingUrl} className="pt-btn pt-btn-secondary" target="_blank" rel="noreferrer">
                         Join
@@ -144,7 +157,7 @@ export function DiscoveryScheduling({
         </button>
       </div>
 
-      {panel === "schedule" && <ScheduleForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} onDone={done} />}
+      {panel === "schedule" && <ScheduleForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} phone={phone ?? ""} onDone={done} />}
       {panel === "link" && (
         <LinkForm discoveryCallId={discoveryCallId} firstName={firstName} types={types} replacing={Boolean(link)} onDone={done} />
       )}
@@ -183,11 +196,13 @@ function ScheduleForm({
   discoveryCallId,
   firstName,
   types,
+  phone,
   onDone,
 }: {
   discoveryCallId: number;
   firstName: string;
   types: SchedulingType[];
+  phone: string;
   onDone: (result: FormState) => void;
 }) {
   const [state, action] = useActionState(closingAction(scheduleDiscoveryCall.bind(null, discoveryCallId), onDone), undefined);
@@ -200,6 +215,7 @@ function ScheduleForm({
 
   return (
     <form action={action} className="pt-form ds-form">
+      <CallTypeFields forAdmin defaultPhone={phone} idPrefix={`ds-${discoveryCallId}`} />
       <TypeSelect
         types={types}
         value={type.id}

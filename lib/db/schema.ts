@@ -82,6 +82,8 @@ export const discoveryCalls = sqliteTable("discovery_calls", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   company: text("company").notNull(),
+  /** Optional, for people who'd rather have a phone call. */
+  phone: text("phone"),
   /** Enquiry form answers (see lib/discovery.ts). `interests` is values joined with "|". */
   interests: text("interests"),
   audience: text("audience"),
@@ -242,8 +244,11 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   discoveryCallId: integer("discovery_call_id").references(() => discoveryCalls.id),
   inviteeName: text("invitee_name"),
   inviteeEmail: text("invitee_email"),
-  locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person"] }).notNull().default("custom"),
+  /** jitsi/custom: video link in meetingUrl; phone: Monika rings inviteePhone; in_person: locationText. */
+  locationMode: text("location_mode", { enum: ["jitsi", "custom", "in_person", "phone"] }).notNull().default("custom"),
   locationText: text("location_text"),
+  /** The number Monika rings for a phone call. */
+  inviteePhone: text("invitee_phone"),
   /** Random secret signed into a prospect's manage link (/appointments/<token>); replacing it revokes old links. */
   manageTokenHash: text("manage_token_hash").unique(),
   /** Monika's private notes. */

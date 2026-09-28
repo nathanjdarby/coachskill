@@ -7,7 +7,7 @@ import { BookingPicker } from "@/components/portal/BookingPicker";
 import { bookingLinkByToken, bookingLinkState, manageUrl } from "@/lib/appointments";
 import { availableSlots, groupSlotsByDay } from "@/lib/booking";
 import { getDb } from "@/lib/db";
-import { coachingSessions } from "@/lib/db/schema";
+import { coachingSessions, discoveryCalls } from "@/lib/db/schema";
 import { durationFor } from "@/lib/event-types";
 
 export const metadata: Metadata = {
@@ -49,13 +49,21 @@ export default async function BookPage({ params }: { params: Promise<{ token: st
   const duration = durationFor(type);
   const days = groupSlotsByDay(availableSlots(duration, { bufferMinutes: type.bufferMinutes }));
   const firstName = link.inviteeName.split(/\s+/)[0];
+  const enquiryPhone = link.discoveryCallId
+    ? getDb().select({ phone: discoveryCalls.phone }).from(discoveryCalls).where(eq(discoveryCalls.id, link.discoveryCallId)).get()?.phone
+    : null;
   return (
     <AuthShell
       wide
       title={`Book your ${type.name.toLowerCase()}`}
-      subtitle={`Hi ${firstName}, pick a time that suits you. It's a ${duration}-minute video call with Monika; you'll get the link by email as soon as you've booked.`}
+      subtitle={`Hi ${firstName}, pick a time that suits you for a ${duration}-minute call with Monika — by video or phone, whichever you prefer.`}
     >
-      <BookingPicker days={days} action={bookFromLink.bind(null, token)} submitLabel="Book" />
+      <BookingPicker
+        days={days}
+        action={bookFromLink.bind(null, token)}
+        submitLabel="Book"
+        callChoice={{ defaultPhone: enquiryPhone ?? "" }}
+      />
     </AuthShell>
   );
 }

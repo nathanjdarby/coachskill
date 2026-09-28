@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { discoveryCalls } from "@/lib/db/schema";
 import { enquiryRows, enquirySubtitle, missingOrInvalid, sanitizeAnswers } from "@/lib/discovery";
 import { emailNewEnquiry } from "@/lib/email";
+import { normalisePhone } from "@/lib/phone";
 import { adminEmails } from "@/lib/portal";
 import {
   clientIp,
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
         fullName: answers.fullName,
         email: answers.email.toLowerCase(),
         company: answers.company,
+        phone: normalisePhone(answers.phone),
         interests: answers.interests,
         audience: answers.audience,
         // Not asked when it's just for themselves.
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
       await emailNewEnquiry({
         to,
         name: saved.fullName,
-        email: saved.email,
+        email: saved.phone ? `${saved.email} · ${saved.phone}` : saved.email,
         subtitle: enquirySubtitle(saved),
         rows: enquiryRows(saved),
         url: await appUrl(`/admin/discovery#request-${saved.id}`),

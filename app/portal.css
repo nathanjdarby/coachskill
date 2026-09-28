@@ -2695,3 +2695,63 @@ fieldset.pt-field {
 .cal-status {
   margin-left: 8px;
 }
+
+/* — Video or phone choice — */
+
+.ct {
+  border: 0;
+  margin: 0 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ct-legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.ct-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ct-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.ct-option.is-selected {
+  border-color: rgba(34, 211, 238, 0.6);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.ct-option input {
+  margin-top: 3px;
+  accent-color: #22d3ee;
+}
+
+.ct-option > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ct-label {
+  font-weight: 600;
+}
+
+@media (max-width: 420px) {
+  .ct-options {
+    grid-template-columns: 1fr;
+  }
+}

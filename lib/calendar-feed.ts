@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db";
 import { bookingSettings, clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
 import { buildFeed } from "@/lib/ics";
 import { hostJoinUrl, workshopHostJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 import { seatsTaken } from "@/lib/workshops";
 
 // Monika's private subscription feed: every appointment and workshop date, so they
@@ -73,7 +74,7 @@ export async function buildCalendarFeed(now = new Date()) {
           .filter(Boolean)
           .join("\n"),
         url: await hostJoinUrl(a, ""),
-        location: a.locationText,
+        location: callPhone(a) ? `Call ${who ?? "them"}: ${callPhone(a)}` : a.locationText,
         cancelled: Boolean(a.cancelledAt),
       };
     }))),

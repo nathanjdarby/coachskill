@@ -1,6 +1,8 @@
 // Enquiry form questions (the "discovery call" request). Shared by the flow UI, the API
 // route that validates submissions, and the admin view — edit questions here only.
 
+import { normalisePhone } from "@/lib/phone";
+
 export type Answers = Record<string, string>;
 
 export type Option = { value: string; label: string; hint?: string };
@@ -25,7 +27,7 @@ export type Question =
       type: "text";
       placeholder?: string;
       maxLength: number;
-      inputType?: "text" | "email";
+      inputType?: "text" | "email" | "tel";
       autoComplete?: string;
     })
   | (Base & { type: "textarea"; placeholder?: string; maxLength: number });
@@ -43,6 +45,7 @@ export type SectionId = (typeof sections)[number]["id"];
 export type QuestionId =
   | "fullName"
   | "email"
+  | "phone"
   | "company"
   | "interests"
   | "audience"
@@ -120,6 +123,19 @@ export const questions: Question[] = [
     placeholder: "jane@company.com",
     maxLength: 254,
     autoComplete: "email",
+  },
+  {
+    id: "phone",
+    section: "about",
+    type: "text",
+    inputType: "tel",
+    label: "Phone",
+    title: "And a phone number?",
+    help: "Optional — handy if you'd prefer a phone call rather than video.",
+    placeholder: "07700 900123",
+    maxLength: 30,
+    autoComplete: "tel",
+    optional: true,
   },
   {
     id: "company",
@@ -227,6 +243,9 @@ export function validationError(q: Question, answers: Answers): string | null {
   if (!v) return null;
   if (q.id === "email" && !EMAIL_RE.test(v)) {
     return "That doesn't look like an email address — please check it.";
+  }
+  if (q.id === "phone" && !normalisePhone(v)) {
+    return "That doesn't look like a phone number — please check it, or skip this one.";
   }
   if (q.type === "single" && !q.options.some((o) => o.value === v)) {
     return "Please choose one of the options.";

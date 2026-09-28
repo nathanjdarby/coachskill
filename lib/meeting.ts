@@ -62,3 +62,8 @@ export function joinNote(url: string | null | undefined, audience: "client" | "a
 export function workshopJoinUrl(w: Pick<Workshop, "locationMode" | "meetingUrl">) {
   return w.locationMode === "in_person" ? null : w.meetingUrl;
 }
+
+/** The number Monika rings, when an appointment is a phone call. */
+export function callPhone(a: { locationMode: string; inviteePhone?: string | null }) {
+  return a.locationMode === "phone" ? (a.inviteePhone ?? null) : null;
+}

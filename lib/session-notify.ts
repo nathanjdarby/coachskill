@@ -7,7 +7,7 @@ import { clients, coachingSessions, users, type Appointment } from "@/lib/db/sch
 import { emailAdminBooking, emailSessionBooked, emailSessionCancelled, emailSessionRescheduled } from "@/lib/email";
 import { icsAttachment } from "@/lib/ics";
 import { guestJoinUrl, hostJoinUrl } from "@/lib/join";
-import { joinNote } from "@/lib/meeting";
+import { callPhone, joinNote } from "@/lib/meeting";
 import { adminEmails } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
@@ -50,16 +50,19 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
   const { session } = row;
   const organizerEmail = process.env.EMAIL_REPLY_TO?.trim() || undefined;
 
-  // Each person's invite carries their own join link.
-  const ics = (url: string | null) =>
+  const phone = callPhone(session);
+  const who = row.clientName ?? session.inviteeName ?? session.inviteeEmail ?? "Someone";
+  // Each person's invite carries their own join link (or, for a phone call, who rings whom).
+  const ics = (url: string | null, forHost = false) =>
     icsAttachment({
       sessionId: session.id,
       sequence: session.icsSequence,
       method: change === "cancelled" ? "CANCEL" : "REQUEST",
       start: session.startsAt,
       durationMinutes: session.durationMinutes,
-      title: `${session.title} with Monika`,
-      url,
+      title: forHost ? `${session.title}: ${who}` : `${session.title} with Monika`,
+      url: phone ? null : url,
+      location: phone ? (forHost ? `Call ${who}: ${phone}` : `Phone call — Monika will ring ${phone}`) : null,
       organizerEmail,
     });
 
@@ -73,6 +76,7 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
       joinUrl,
+      phone,
       attachments: [ics(joinUrl)],
     };
     if (change === "booked") await emailSessionBooked(base);
@@ -83,7 +87,6 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
   if (actor !== "admin") {
     const to = await adminEmails();
     if (to.length) {
-      const who = row.clientName ?? session.inviteeName ?? session.inviteeEmail ?? "Someone";
       const verb = change === "booked" ? "booked" : change === "rescheduled" ? "moved" : "cancelled";
       const [url, buttonLabel] = session.clientId
         ? [`/admin/clients/${session.clientId}#sessions`, "Open client"]
@@ -96,12 +99,13 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
         subject: `${who} ${verb} ${session.discoveryCallId && !session.clientId ? `a ${session.title.toLowerCase()}` : "a session"}`,
         lines: [
           `${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`,
+          ...(phone && change !== "cancelled" ? [`Phone call — ring ${who} on ${phone}.`] : []),
           ...(hostUrl && change !== "cancelled" ? [`Join: ${hostUrl}`] : []),
           ...(change !== "cancelled" && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
         ],
         url: await appUrl(url),
         buttonLabel,
-        attachments: [ics(hostUrl)],
+        attachments: [ics(hostUrl, true)],
       });
     }
   }

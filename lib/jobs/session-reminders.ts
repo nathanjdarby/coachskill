@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { coachingSessions } from "@/lib/db/schema";
 import { emailSessionReminder } from "@/lib/email";
 import { guestJoinUrl } from "@/lib/join";
+import { callPhone } from "@/lib/meeting";
 import { appointmentRecipient } from "@/lib/session-notify";
 
 const HOUR = 60 * 60 * 1000;
@@ -55,6 +56,7 @@ async function sendReminders(now: Date, window: Window) {
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
       joinUrl: await guestJoinUrl(session, recipient.name),
+      phone: callPhone(session),
       when: window === "1h" ? "soon" : "tomorrow",
     });
     if (!result.ok) {

@@ -58,6 +58,8 @@ export function insertInviteeAppointment(input: {
   clientId: number | null;
   bookedBy: "admin" | "invitee";
   meetingUrl?: string | null;
+  /** A phone call instead of video: Monika rings this number. */
+  phone?: string | null;
 }) {
   const now = new Date();
   return getDb()
@@ -71,8 +73,9 @@ export function insertInviteeAppointment(input: {
       title: input.type.name,
       startsAt: input.startsAt,
       durationMinutes: input.durationMinutes,
-      meetingUrl: resolveMeetingUrl(input.type, input.meetingUrl),
-      locationMode: input.meetingUrl ? "custom" : input.type.locationMode,
+      meetingUrl: input.phone ? null : resolveMeetingUrl(input.type, input.meetingUrl),
+      locationMode: input.phone ? "phone" : input.meetingUrl ? "custom" : input.type.locationMode,
+      inviteePhone: input.phone ?? null,
       manageTokenHash: newLinkSecret(),
       bookedBy: input.bookedBy,
       createdAt: now,

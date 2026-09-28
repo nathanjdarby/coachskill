@@ -23,6 +23,7 @@ import { DISCOVERY_SLUG, QUICK_CALL_SLUG, durationFor, getEventType, getEventTyp
 import { guestJoinUrl, hostJoinUrl, usesInAppRoom } from "@/lib/join";
 import { appointmentRecipient, notifyAppointmentChange } from "@/lib/session-notify";
 import { newLinkSecret } from "@/lib/signed-links";
+import { normalisePhone } from "@/lib/phone";
 import { clientIp, rateLimit } from "@/lib/spam";
 import { parseLondonDateTime } from "@/lib/time";
 import type { FormState } from "./types";
@@ -82,7 +83,9 @@ export async function scheduleDiscoveryCall(discoveryCallId: number, _state: For
     return { ok: false, errors: { [slot === "manual" ? "manualStartsAt" : "slot"]: "Choose a time." } };
   }
   if (startsAt.getTime() < Date.now()) return { ok: false, errors: { manualStartsAt: "That time has already passed." } };
-  const meetingUrl = String(formData.get("meetingUrl") ?? "").trim().slice(0, 500);
+  const call = callTypeFrom(formData);
+  if ("error" in call) return { ok: false, message: "Enter the number to call." };
+  const meetingUrl = call.phone ? "" : String(formData.get("meetingUrl") ?? "").trim().slice(0, 500);
   if (meetingUrl && !/^https:\/\/\S+$/.test(meetingUrl)) return { ok: false, errors: { meetingUrl: "Use a full https:// link." } };
 
   const duration = durationFor(type);
@@ -101,6 +104,7 @@ export async function scheduleDiscoveryCall(discoveryCallId: number, _state: For
       clientId: found.clientId,
       bookedBy: "admin",
       meetingUrl: meetingUrl || null,
+      phone: call.phone,
     });
     revokeOpenLinks(found.call.id);
     return { appointment, free } as const;
@@ -113,7 +117,7 @@ export async function scheduleDiscoveryCall(discoveryCallId: number, _state: For
   return {
     ok: true,
     message: result.free
-      ? `Booked. ${first} has been emailed an invite with the video link.`
+      ? `Booked. ${first} has been emailed an invite${call.phone ? " saying you'll call them" : " with the video link"}.`
       : `Booked, but note it overlaps something else in your calendar. ${first} has been emailed an invite.`,
   };
 }
@@ -261,6 +265,13 @@ async function allowed(key: string) {
   return rateLimit(`${key}:${ip}`, 20, 10 * 60 * 1000);
 }
 
+/** Video (default) or a phone call with the number to ring, from CallTypeFields. */
+function callTypeFrom(formData: FormData): { phone: string | null } | { error: string } {
+  if (formData.get("callType") !== "phone") return { phone: null };
+  const phone = normalisePhone(String(formData.get("phone") ?? ""));
+  return phone ? { phone } : { error: "Please enter a phone number Monika can call you on." };
+}
+
 function parseSlot(formData: FormData) {
   const d = new Date(String(formData.get("startsAt") ?? ""));
   return Number.isNaN(d.getTime()) ? null : d;
@@ -271,6 +282,8 @@ export async function bookFromLink(token: string, _state: FormState, formData: F
   if (!(await allowed("book"))) return { ok: false, message: "Too many attempts. Please wait a few minutes and try again." };
   const startsAt = parseSlot(formData);
   if (!startsAt) return { ok: false, message: "Choose a time first." };
+  const call = callTypeFrom(formData);
+  if ("error" in call) return { ok: false, message: call.error };
   const found = bookingLinkByToken(token);
   if (!found) return { ok: false, message: "This booking link isn't valid." };
 
@@ -296,6 +309,7 @@ export async function bookFromLink(token: string, _state: FormState, formData: F
       discoveryCallId: link.discoveryCallId,
       clientId,
       bookedBy: "invitee",
+      phone: call.phone,
     });
     db.update(bookingLinks).set({ usedAt: new Date(), appointmentId: appointment.id }).where(eq(bookingLinks.id, link.id)).run();
     return { appointment } as const;

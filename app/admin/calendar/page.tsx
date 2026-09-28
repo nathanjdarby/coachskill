@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { WaitingBanner } from "@/components/admin/WaitingBanner";
 import { requireAdmin } from "@/lib/dal";
+import { telHref } from "@/lib/phone";
 import { agendaWindow, groupByDay, listAgenda } from "@/lib/calendar";
 import { formatDay, formatTime } from "@/lib/time";
 
@@ -67,6 +68,11 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
                     {item.joinUrl && (
                       <a href={item.joinUrl} className="pt-btn pt-btn-secondary cal-join" target="_blank" rel="noopener noreferrer">
                         Join
+                      </a>
+                    )}
+                    {item.phone && (
+                      <a href={telHref(item.phone)} className="pt-btn pt-btn-secondary cal-join" title={`Call ${item.phone}`}>
+                        Call
                       </a>
                     )}
                   </li>

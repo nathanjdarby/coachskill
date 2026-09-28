@@ -187,6 +187,8 @@ type SessionEmail = {
   guest?: boolean;
   /** Their own join link (in-app room or personalised Jitsi link); worked out here if missing. */
   joinUrl?: string | null;
+  /** A phone call: the number Monika will ring (no join link). */
+  phone?: string | null;
 };
 
 /** Clients know them as sessions; prospects see the call's own name. */
@@ -202,6 +204,7 @@ function sessionLine(s: SessionEmail) {
 const sessionJoinUrl = (s: SessionEmail) => s.joinUrl ?? personalJoinUrl(s.meetingUrl, { name: s.name, subject: s.title });
 
 function meetingLine(s: SessionEmail) {
+  if (s.phone) return [`It's a phone call — Monika will ring you on ${s.phone}.`, "Need a different number? Just reply to this email."];
   if (!s.meetingUrl) return [];
   const note = joinNote(s.meetingUrl, "client");
   return [`Join here: ${sessionJoinUrl(s)}`, ...(note ? [note] : []), setupLine];
@@ -258,10 +261,14 @@ export function emailSessionReminder(input: SessionEmail & { when: "tomorrow" | 
     heading: input.when === "soon" ? `Hi ${firstName(input.name)}, we start in about an hour` : `Hi ${firstName(input.name)}, see you tomorrow`,
     paragraphs: [
       sessionLine(input),
-      ...(joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : []),
-      ...(input.meetingUrl && input.when === "tomorrow" ? [setupLine] : []),
+      ...(input.phone ? [`Monika will ring you on ${input.phone}.`] : []),
+      ...(!input.phone && joinNote(input.meetingUrl, "client") ? [joinNote(input.meetingUrl, "client")!] : []),
+      ...(!input.phone && input.meetingUrl && input.when === "tomorrow" ? [setupLine] : []),
     ],
-    button: input.meetingUrl ? { label: "Join the session", url: sessionJoinUrl(input)! } : { label: "View in your client area", url: input.url },
+    button:
+      input.meetingUrl && !input.phone
+        ? { label: "Join the session", url: sessionJoinUrl(input)! }
+        : { label: input.guest ? "View your booking" : "View in your client area", url: input.url },
     footnote: input.guest
       ? `Need to change it? Use your booking page: ${input.url}`
       : "Need to change it? You can reschedule from your client area.",
@@ -358,7 +365,7 @@ export function emailBookingLink(input: { to: string; name: string; typeName: st
     subject: `Pick a time for your ${input.typeName.toLowerCase()} with Monika`,
     heading: `Hi ${firstName(input.name)}, let's find a time to talk`,
     paragraphs: [
-      `Thanks for getting in touch. Choose a time that suits you for a ${input.durationMinutes}-minute ${input.typeName.toLowerCase()} — it's a video call, and you'll get the link as soon as you've booked.`,
+      `Thanks for getting in touch. Choose a time that suits you for a ${input.durationMinutes}-minute ${input.typeName.toLowerCase()} — by video or phone, whichever you prefer. You'll get a confirmation as soon as you've booked.`,
       "All times are shown in UK time.",
     ],
     button: { label: "Choose a time", url: input.url },
