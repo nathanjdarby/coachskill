@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   clientNotes,
+  clientPackages,
   clients,
   coachingSessions,
   discoveryCalls,
@@ -77,6 +78,15 @@ export async function listSessionRequests() {
       ),
     )
     .orderBy(asc(coachingSessions.startsAt));
+}
+
+/** Paid coaching packages since `since`: how many and their total, in pence. */
+export async function packageIncomeSince(since: Date) {
+  const [row] = await getDb()
+    .select({ n: sql<number>`count(*)`, pence: sql<number>`coalesce(sum(${clientPackages.pricePence}), 0)` })
+    .from(clientPackages)
+    .where(and(eq(clientPackages.status, "paid"), gte(clientPackages.paidAt, since)));
+  return { count: row?.n ?? 0, pence: row?.pence ?? 0 };
 }
 
 export async function adminDashboardCounts() {
