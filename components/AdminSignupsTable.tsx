@@ -26,7 +26,14 @@ const STATUS_TONE: Record<Status, string> = {
 };
 
 /** Workshop signups as cards: who, which date, payment, account, notes and actions. */
-export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
+export function AdminSignupsTable({
+  signups,
+  attendedMinutes = {},
+}: {
+  signups: SignupListRow[];
+  /** Minutes each signup spent in the in-app workshop call, if they joined it. */
+  attendedMinutes?: Record<number, number>;
+}) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<number | null>(null);
   const [results, setResults] = useState<Record<number, FormState>>({});
@@ -96,6 +103,7 @@ export function AdminSignupsTable({ signups }: { signups: SignupListRow[] }) {
                 ) : (
                   <span className="pt-badge">Unpaid</span>
                 )}
+                {attendedMinutes[s.id] !== undefined && <span className="pt-badge is-info">Attended · {attendedMinutes[s.id]} min</span>}
               </div>
             </div>
 

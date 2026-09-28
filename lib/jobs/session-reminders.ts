@@ -3,6 +3,7 @@ import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { coachingSessions } from "@/lib/db/schema";
 import { emailSessionReminder } from "@/lib/email";
+import { guestJoinUrl } from "@/lib/join";
 import { appointmentRecipient } from "@/lib/session-notify";
 
 const HOUR = 60 * 60 * 1000;
@@ -53,6 +54,7 @@ async function sendReminders(now: Date, window: Window) {
       startsAt: session.startsAt,
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
+      joinUrl: await guestJoinUrl(session, recipient.name),
       when: window === "1h" ? "soon" : "tomorrow",
     });
     if (!result.ok) {

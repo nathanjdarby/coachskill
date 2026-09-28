@@ -20,7 +20,7 @@ import { getDb } from "@/lib/db";
 import { bookingLinks, clients, coachingSessions, discoveryCalls, messages } from "@/lib/db/schema";
 import { emailBookingLink, emailCallNow } from "@/lib/email";
 import { DISCOVERY_SLUG, QUICK_CALL_SLUG, durationFor, getEventType, getEventTypeBySlug } from "@/lib/event-types";
-import { personalJoinUrl } from "@/lib/meeting";
+import { guestJoinUrl, hostJoinUrl, usesInAppRoom } from "@/lib/join";
 import { appointmentRecipient, notifyAppointmentChange } from "@/lib/session-notify";
 import { newLinkSecret } from "@/lib/signed-links";
 import { clientIp, rateLimit } from "@/lib/spam";
@@ -225,14 +225,14 @@ export async function startCallNow(target: { clientId: number } | { discoveryCal
     bookedBy: "admin",
   });
   const recipient = await appointmentRecipient(appointment);
-  const guestJoin = personalJoinUrl(appointment.meetingUrl, { name: recipient?.name ?? person.name, subject: type.name })!;
+  const guestJoin = (await guestJoinUrl(appointment, recipient?.name ?? person.name))!;
   if (person.clientId) {
     db.insert(messages)
       .values({
         clientId: person.clientId,
         senderId: admin.id,
         // The plain room link reads better in a message than the personalised one.
-        body: `I've started a video call — join me here whenever you're ready: ${appointment.meetingUrl}`,
+        body: `I've started a video call — join me here whenever you're ready: ${usesInAppRoom(appointment.meetingUrl) ? guestJoin : appointment.meetingUrl}`,
         createdAt: new Date(),
       })
       .run();
@@ -249,7 +249,7 @@ export async function startCallNow(target: { clientId: number } | { discoveryCal
     message: sent.ok
       ? `Call started — ${first} has been emailed the link${person.clientId ? " and it's in their messages" : ""}.`
       : `Call started, but the email couldn't be sent${person.clientId ? " (the link is in their messages)" : ""}. Send them this link:`,
-    link: personalJoinUrl(appointment.meetingUrl, { name: admin.name, subject: type.name })!,
+    link: (await hostJoinUrl(appointment, admin.name))!,
     fields: { guestLink: guestJoin },
   };
 }

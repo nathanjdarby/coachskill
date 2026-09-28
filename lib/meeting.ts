@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import type { EventType } from "@/lib/db/schema";
+import type { EventType, Workshop } from "@/lib/db/schema";
+import { jaasEnabled } from "@/lib/jaas";
 
 // Video links for appointments. Every booking gets its own private Jitsi room,
 // so no video account or API is needed. Kept in one place so the provider can
@@ -46,7 +47,18 @@ export function resolveMeetingUrl(type: LocationSource | null, override?: string
 /** How to join, for emails: public Jitsi rooms open once Monika (signed in) joins. */
 export function joinNote(url: string | null | undefined, audience: "client" | "admin") {
   if (!isJitsiUrl(url)) return null;
+  // In the in-app room Monika is host automatically and guests go straight in.
+  if (jaasEnabled()) {
+    return audience === "admin"
+      ? "The call opens in Coach Skill and you're the host automatically — no sign-in needed."
+      : "The link opens a private video room in your browser — no app or account needed.";
+  }
   return audience === "admin"
     ? "Join a few minutes early and sign in when Jitsi asks — the room opens for your guest once you're in."
     : "The link opens a private video room in your browser — no app or account needed. Monika will let you in.";
+}
+
+/** A workshop's online joining link (its room or Monika's own link), if it's online. */
+export function workshopJoinUrl(w: Pick<Workshop, "locationMode" | "meetingUrl">) {
+  return w.locationMode === "in_person" ? null : w.meetingUrl;
 }

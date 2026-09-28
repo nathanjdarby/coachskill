@@ -4,6 +4,7 @@ import { workshopBookingsFor } from "@/lib/attendees";
 import { currentUser } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { clients } from "@/lib/db/schema";
+import { attendeeJoinUrl } from "@/lib/join";
 import { workshopIcs } from "@/lib/workshop-invite";
 
 /** "Add to calendar" for one of the client's own workshop bookings. */
@@ -18,7 +19,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const booking = (await workshopBookingsFor(client)).find((b) => b.signup.id === signupId);
   if (!booking?.workshop.startsAt) return new NextResponse("Not found", { status: 404 });
 
-  return new NextResponse(workshopIcs(booking.workshop), {
+  const joinUrl = await attendeeJoinUrl(booking.workshop, booking.signup);
+  return new NextResponse(workshopIcs(booking.workshop, joinUrl), {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": `attachment; filename="coach-skill-workshop-${booking.workshop.id}.ics"`,

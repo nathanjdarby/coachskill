@@ -254,6 +254,8 @@ export const coachingSessions = sqliteTable("coaching_sessions", {
   recapById: integer("recap_by_id"),
   followUpEnabled: integer("follow_up_enabled", { mode: "boolean" }).notNull().default(true),
   followUpSentAt: integer("follow_up_sent_at", { mode: "timestamp_ms" }),
+  /** Set when Monika was emailed that the guest is waiting in the in-app room. */
+  waitingAlertSentAt: integer("waiting_alert_sent_at", { mode: "timestamp_ms" }),
   /** The package this session uses a credit from, if any. */
   clientPackageId: integer("client_package_id").references(() => clientPackages.id),
   title: text("title").notNull(),
@@ -289,6 +291,29 @@ export const bookingLinks = sqliteTable("booking_links", {
   revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/**
+ * Who joined an in-app (JaaS) call and for how long. One row per browser tab that
+ * joined; `last_seen_at` is refreshed by a heartbeat so crashed tabs still count.
+ * Plain ids (no foreign keys) so appointments and signups can be removed freely.
+ */
+export const meetingAttendance = sqliteTable(
+  "meeting_attendance",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    appointmentId: integer("appointment_id"),
+    workshopId: integer("workshop_id"),
+    signupId: integer("signup_id"),
+    role: text("role", { enum: ["host", "guest"] }).notNull(),
+    name: text("name").notNull(),
+    /** Random per page load, so repeat reports from the same tab update one row. */
+    sessionKey: text("session_key").notNull().unique(),
+    joinedAt: integer("joined_at", { mode: "timestamp_ms" }).notNull(),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+    leftAt: integer("left_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [index("meeting_attendance_appointment_idx").on(t.appointmentId), index("meeting_attendance_workshop_idx").on(t.workshopId)],
+);
 
 /** Weekly bookable hours (London time), e.g. Monday 09:00–17:00. */
 export const availabilityRules = sqliteTable("availability_rules", {
@@ -409,5 +434,6 @@ export type EventType = typeof eventTypes.$inferSelect;
 export type Appointment = CoachingSession;
 export type BookingLink = typeof bookingLinks.$inferSelect;
 export type CalendarSource = typeof calendarSources.$inferSelect;
+export type MeetingAttendance = typeof meetingAttendance.$inferSelect;
 export type Resource = typeof resources.$inferSelect;
 export type ResourceShare = typeof resourceShares.$inferSelect;

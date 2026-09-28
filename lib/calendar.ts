@@ -2,9 +2,10 @@ import "server-only";
 import { and, asc, gte, isNotNull, isNull, lt, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
+import { appointmentAttendance, isNoShow } from "@/lib/attendance";
 import { externalBusyBetween } from "@/lib/calendar-sync";
 import { londonDate } from "@/lib/time";
-import { workshopJoinUrl } from "@/lib/workshop-invite";
+import { hostJoinUrl, workshopHostJoinUrl } from "@/lib/join";
 import { seatsTaken } from "@/lib/workshops";
 
 export type AgendaItem = {
@@ -17,6 +18,8 @@ export type AgendaItem = {
   colour: string;
   joinUrl: string | null;
   allDay?: boolean;
+  /** In-app call attendance: "Waiting now", "Attended · 52 min" or "No-show". */
+  status?: { label: string; tone: "ok" | "warn" | "danger" };
   /** Where the admin goes to manage it. */
   href: string;
 };
@@ -26,7 +29,7 @@ const WORKSHOP_COLOUR = "#fbbf24";
 const BUSY_COLOUR = "#64748b";
 
 /** Everything booked between `from` and `to`: appointments and workshop dates, soonest first. */
-export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
+export async function listAgenda(from: Date, to: Date, hostName: string): Promise<AgendaItem[]> {
   const db = getDb();
   const appts = await db
     .select({ a: coachingSessions, typeName: eventTypes.name, colour: eventTypes.colour, clientName: clients.fullName })
@@ -41,8 +44,17 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
     .where(and(isNotNull(workshops.startsAt), gte(workshops.startsAt, from), lt(workshops.startsAt, to)))
     .orderBy(asc(workshops.startsAt));
 
+  const attendance = appointmentAttendance(appts.map(({ a }) => a.id));
+  const statusOf = (id: number): AgendaItem["status"] => {
+    const s = attendance.get(id);
+    if (!s) return undefined;
+    if (s.waiting) return { label: "Waiting now", tone: "warn" };
+    if (isNoShow(s)) return { label: "No-show", tone: "danger" };
+    if (s.guestJoined) return { label: `Attended · ${s.guestMinutes} min`, tone: "ok" };
+    return undefined;
+  };
   const items: AgendaItem[] = [
-    ...appts.map(({ a, typeName, colour, clientName }) => ({
+    ...(await Promise.all(appts.map(async ({ a, typeName, colour, clientName }) => ({
       kind: "appointment" as const,
       id: a.id,
       start: a.startsAt,
@@ -52,9 +64,10 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
         .filter(Boolean)
         .join(" · "),
       colour: colour ?? "#22d3ee",
-      joinUrl: a.meetingUrl,
+      joinUrl: a.cancelledAt ? null : await hostJoinUrl(a, hostName),
       href: `/admin/sessions/${a.id}`,
-    })),
+      status: statusOf(a.id),
+    })))),
     ...(await Promise.all(
       runs.map(async (w) => {
         const taken = await seatsTaken(w.id);
@@ -66,7 +79,7 @@ export async function listAgenda(from: Date, to: Date): Promise<AgendaItem[]> {
           title: w.name,
           who: `${taken}${w.capacity != null ? ` / ${w.capacity}` : ""} booked${w.published ? "" : " · hidden"}`,
           colour: WORKSHOP_COLOUR,
-          joinUrl: workshopJoinUrl(w),
+          joinUrl: await workshopHostJoinUrl(w, hostName),
           href: `/admin/signups?workshop=${w.id}`,
         };
       }),

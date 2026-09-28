@@ -6,7 +6,7 @@ import { getAuthSecret } from "@/lib/auth-secret";
 // row id and a random per-row secret, so the same link can be emailed again (and
 // copied by the admin) while replacing the secret revokes every earlier copy.
 
-type Kind = "appointment" | "booking";
+type Kind = "appointment" | "booking" | "attend";
 
 function key() {
   const secret = getAuthSecret();

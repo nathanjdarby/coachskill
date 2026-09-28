@@ -185,6 +185,8 @@ type SessionEmail = {
   attachments?: EmailAttachment[];
   /** A prospect without a client account: `url` is their manage link. */
   guest?: boolean;
+  /** Their own join link (in-app room or personalised Jitsi link); worked out here if missing. */
+  joinUrl?: string | null;
 };
 
 /** Clients know them as sessions; prospects see the call's own name. */
@@ -197,7 +199,7 @@ function sessionLine(s: SessionEmail) {
 }
 
 /** The recipient's own join link: their name filled in and the room titled. */
-const sessionJoinUrl = (s: SessionEmail) => personalJoinUrl(s.meetingUrl, { name: s.name, subject: s.title });
+const sessionJoinUrl = (s: SessionEmail) => s.joinUrl ?? personalJoinUrl(s.meetingUrl, { name: s.name, subject: s.title });
 
 function meetingLine(s: SessionEmail) {
   if (!s.meetingUrl) return [];
@@ -307,6 +309,16 @@ export function emailSessionFollowUp(input: {
   });
 }
 
+export function emailGuestWaiting(input: { to: string[]; guestName: string; title: string; url: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: `${input.guestName} is waiting in your call`,
+    heading: `${input.guestName} is waiting for you`,
+    paragraphs: [`They've joined the ${input.title.toLowerCase()} and are waiting in the room.`],
+    button: { label: "Join now", url: input.url },
+  });
+}
+
 export function emailCallNow(input: { to: string; name: string; joinUrl: string; fromName: string }) {
   return sendEmail({
     to: input.to,
@@ -364,7 +376,11 @@ type WorkshopInfo = {
   meetingUrl?: string | null;
   /** Calendar invite for the workshop. */
   attachments?: EmailAttachment[];
+  /** The attendee's own join link; worked out from `meetingUrl` if missing. */
+  joinUrl?: string | null;
 };
+
+const workshopJoinFor = (w: WorkshopInfo, name: string) => w.joinUrl ?? personalJoinUrl(w.meetingUrl, { name, subject: w.workshopName });
 
 function workshopLine(w: WorkshopInfo) {
   const when = w.startsAt ? `${formatDateTime(w.startsAt)} (UK time)` : "Date to be confirmed — I'll email you as soon as it's set";
@@ -374,7 +390,7 @@ function workshopLine(w: WorkshopInfo) {
 function workshopJoinLines(w: WorkshopInfo, name: string) {
   if (!w.meetingUrl) return [];
   const note = joinNote(w.meetingUrl, "client");
-  return [`Join online here: ${personalJoinUrl(w.meetingUrl, { name, subject: w.workshopName })}`, ...(note ? [note] : []), setupLine];
+  return [`Join online here: ${workshopJoinFor(w, name)}`, ...(note ? [note] : []), setupLine];
 }
 
 export function emailDepositConfirmed(
@@ -489,7 +505,7 @@ export function emailWorkshopReminder(input: WorkshopInfo & { to: string; name: 
       ...(input.meetingUrl && input.when === "tomorrow" ? [setupLine] : []),
     ],
     button: input.meetingUrl
-      ? { label: "Join the workshop", url: personalJoinUrl(input.meetingUrl, { name: input.name, subject: input.workshopName })! }
+      ? { label: "Join the workshop", url: workshopJoinFor(input, input.name)! }
       : { label: "View in your client area", url: input.url },
     footnote: "If something's come up, just reply to this email.",
   });

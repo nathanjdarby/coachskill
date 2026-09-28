@@ -3,7 +3,7 @@ import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { DiscoveryScheduling, type SchedulingType } from "@/components/admin/DiscoveryScheduling";
 import { isUpcoming, schedulingForDiscovery } from "@/lib/appointments";
 import { availableSlots, groupSlotsByDay } from "@/lib/booking";
-import { personalJoinUrl } from "@/lib/meeting";
+import { hostJoinUrl } from "@/lib/join";
 import { requireAdmin } from "@/lib/dal";
 import { durationFor, listEventTypes } from "@/lib/event-types";
 import { enquirySubtitle } from "@/lib/discovery";
@@ -14,6 +14,11 @@ export default async function AdminDiscoveryPage() {
   const admin = await requireAdmin();
   const rows = await listDiscoveryCallsWithClients();
   const scheduling = await schedulingForDiscovery(rows.map((r) => r.call.id));
+  const hostLinks = new Map(
+    await Promise.all(
+      [...scheduling.values()].flatMap((s) => s.appointments).map(async (a) => [a.id, await hostJoinUrl(a, admin.name)] as const),
+    ),
+  );
   // Types Monika can send to prospects, with her free times for each.
   const types: SchedulingType[] = listEventTypes({ activeOnly: true })
     .filter((t) => t.audience === "invite_only")
@@ -76,7 +81,7 @@ export default async function AdminDiscoveryPage() {
                     title: a.title,
                     startsAt: a.startsAt,
                     durationMinutes: a.durationMinutes,
-                    meetingUrl: personalJoinUrl(a.meetingUrl, { name: admin.name, subject: a.title }),
+                    meetingUrl: hostLinks.get(a.id) ?? null,
                     cancelledAt: a.cancelledAt,
                     upcoming: isUpcoming(a),
                     colour: a.typeColour,

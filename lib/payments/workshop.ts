@@ -82,7 +82,7 @@ export async function handleDepositPaid(session: Stripe.Checkout.Session) {
   } catch (err) {
     console.error("Attendee onboarding failed", err);
   }
-  await emailDepositConfirmed({ to: email, name, balancePence: workshop.balancePence, account, ...info(workshop) });
+  await emailDepositConfirmed({ to: email, name, balancePence: workshop.balancePence, account, ...(await info(workshop, row)) });
   await notifyAdmins(full ? `Deposit paid for a FULL workshop: ${name}` : `New workshop booking: ${name}`, [
     `${name} (${email}) paid a ${formatPence(paid)} deposit for ${workshop.name}.`,
     full ? "The run was already full, so the signup is on hold." : "",
@@ -119,7 +119,7 @@ export async function handleBalancePaid(session: Stripe.Checkout.Session) {
     .where(eq(signups.id, signupId))
     .limit(1);
   if (!row) return;
-  await emailBalancePaid({ to: row.signup.email, name: row.signup.name, ...info(row.workshop) });
+  await emailBalancePaid({ to: row.signup.email, name: row.signup.name, ...(await info(row.workshop, row.signup)) });
   await notifyAdmins(`Balance paid: ${row.signup.name}`, [
     `${row.signup.name} paid the ${formatPence(paid)} balance for ${row.workshop.name}. They're fully booked.`,
   ]);

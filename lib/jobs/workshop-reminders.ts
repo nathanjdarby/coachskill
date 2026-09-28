@@ -5,7 +5,8 @@ import { getDb } from "@/lib/db";
 import { signups, workshops } from "@/lib/db/schema";
 import { emailWorkshopReminder } from "@/lib/email";
 import { SEAT_STATUSES } from "@/lib/signup-status";
-import { workshopJoinUrl } from "@/lib/workshop-invite";
+import { attendeeJoinUrl } from "@/lib/join";
+import { workshopJoinUrl } from "@/lib/meeting";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -56,6 +57,7 @@ async function sendReminders(now: Date, window: Window) {
       startsAt: workshop.startsAt,
       location: workshop.location,
       meetingUrl: workshopJoinUrl(workshop),
+      joinUrl: await attendeeJoinUrl(workshop, signup),
       url,
       when: window === "1h" ? "soon" : "tomorrow",
     });

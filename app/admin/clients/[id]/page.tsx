@@ -20,7 +20,8 @@ import { requireAdmin } from "@/lib/dal";
 import { CallNowButton } from "@/components/admin/CallNowButton";
 import { EnquiryAnswers } from "@/components/EnquiryAnswers";
 import { workshopBookingsFor } from "@/lib/attendees";
-import { personalJoinUrl } from "@/lib/meeting";
+import { appointmentAttendance, isNoShow } from "@/lib/attendance";
+import { hostJoinUrl } from "@/lib/join";
 import { formatPence } from "@/lib/money";
 import { COACHING_SLUG, listEventTypes } from "@/lib/event-types";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
@@ -38,6 +39,11 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
 
   const { client, user, access, discovery, notes, sessions, messages } = detail;
   const { upcoming, past } = splitSessions(sessions);
+  const attendance = appointmentAttendance(sessions.map((s) => s.id));
+  const attendanceLabels = new Map(
+    [...attendance].map(([id, s]) => [id, s.waiting ? "Waiting now" : isNoShow(s) ? "No-show" : s.guestJoined ? `Attended · ${s.guestMinutes} min` : null] as const),
+  );
+  const hostLinks = new Map(await Promise.all(sessions.map(async (s) => [s.id, await hostJoinUrl(s, admin.name)] as const)));
   const [balances, catalogue, bookings] = await Promise.all([packageBalances(id), listPackages(), workshopBookingsFor(client)]);
   const credit = activeCredit(balances);
   const creditOptions = balances
@@ -140,13 +146,13 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             {upcoming.length > 0 && (
               <>
                 <h3 className="pt-subhead">Upcoming</h3>
-                <SessionList sessions={upcoming} clientId={client.id} packageNames={packageNames} hostName={admin.name} />
+                <SessionList sessions={upcoming} clientId={client.id} packageNames={packageNames} hostLinks={hostLinks} attendanceLabels={attendanceLabels} />
               </>
             )}
             {past.length > 0 && (
               <>
                 <h3 className="pt-subhead">Past</h3>
-                <SessionList sessions={past} clientId={client.id} packageNames={packageNames} hostName={admin.name} />
+                <SessionList sessions={past} clientId={client.id} packageNames={packageNames} hostLinks={hostLinks} attendanceLabels={attendanceLabels} />
               </>
             )}
             <details className="pt-inline-details">
@@ -257,7 +263,8 @@ function SessionList({
   sessions,
   clientId,
   packageNames,
-  hostName,
+  hostLinks,
+  attendanceLabels,
 }: {
   sessions: {
     id: number;
@@ -272,8 +279,9 @@ function SessionList({
   }[];
   clientId: number;
   packageNames: Map<number, string>;
-  /** The signed-in admin, so their join links open with their name. */
-  hostName: string;
+  /** The signed-in admin's join link for each session (in-app room or named Jitsi link). */
+  hostLinks: Map<number, string | null>;
+  attendanceLabels: Map<number, string | null>;
 }) {
   return (
     <ul className="pt-sessions">
@@ -285,6 +293,7 @@ function SessionList({
               {s.cancelledAt && `Cancelled by ${s.cancelledBy === "admin" ? "you" : "client"} · `}
               {!s.cancelledAt && s.bookedBy !== "admin" && "Booked by client · "}
               {formatDateTime(s.startsAt)} · {s.durationMinutes} min
+              {attendanceLabels.get(s.id) && ` · ${attendanceLabels.get(s.id)}`}
               {s.clientPackageId && packageNames.has(s.clientPackageId) && ` · ${packageNames.get(s.clientPackageId)}`}
               {" · "}
               <Link href={`/admin/sessions/${s.id}`} className="pt-link">
@@ -293,7 +302,7 @@ function SessionList({
               {s.meetingUrl && (
                 <>
                   {" · "}
-                  <a href={personalJoinUrl(s.meetingUrl, { name: hostName, subject: s.title })!} className="pt-link" target="_blank" rel="noreferrer">
+                  <a href={hostLinks.get(s.id) ?? s.meetingUrl} className="pt-link" target="_blank" rel="noreferrer">
                     Meeting link
                   </a>
                 </>

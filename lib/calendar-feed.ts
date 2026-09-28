@@ -6,7 +6,7 @@ import { getBookingSettings } from "@/lib/booking";
 import { getDb } from "@/lib/db";
 import { bookingSettings, clients, coachingSessions, eventTypes, workshops } from "@/lib/db/schema";
 import { buildFeed } from "@/lib/ics";
-import { workshopJoinUrl } from "@/lib/workshop-invite";
+import { hostJoinUrl, workshopHostJoinUrl } from "@/lib/join";
 import { seatsTaken } from "@/lib/workshops";
 
 // Monika's private subscription feed: every appointment and workshop date, so they
@@ -61,7 +61,7 @@ export async function buildCalendarFeed(now = new Date()) {
 
   const adminLink = await appUrl("/admin/calendar");
   const events = [
-    ...appts.map(({ a, clientName }) => {
+    ...(await Promise.all(appts.map(async ({ a, clientName }) => {
       const who = clientName ?? a.inviteeName ?? a.inviteeEmail;
       return {
         uid: `session-${a.id}@coachskill.co.uk`,
@@ -72,11 +72,11 @@ export async function buildCalendarFeed(now = new Date()) {
         description: [who && `With ${who}${a.inviteeEmail && !clientName ? ` (${a.inviteeEmail})` : ""}`, `Coach Skill: ${adminLink}`]
           .filter(Boolean)
           .join("\n"),
-        url: a.meetingUrl,
+        url: await hostJoinUrl(a, ""),
         location: a.locationText,
         cancelled: Boolean(a.cancelledAt),
       };
-    }),
+    }))),
     ...(await Promise.all(
       runs.map(async (w) => {
         const taken = await seatsTaken(w.id);
@@ -87,7 +87,7 @@ export async function buildCalendarFeed(now = new Date()) {
           durationMinutes: w.durationMinutes,
           title: w.name,
           description: `${taken}${w.capacity != null ? ` of ${w.capacity}` : ""} places booked\nCoach Skill: ${await appUrl(`/admin/signups?workshop=${w.id}`)}`,
-          url: workshopJoinUrl(w),
+          url: await workshopHostJoinUrl(w, ""),
           location: w.location,
           cancelled: false,
         };

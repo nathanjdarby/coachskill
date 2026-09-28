@@ -7,7 +7,7 @@ import { SessionActions } from "@/components/portal/SessionActions";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
 import { requireClient } from "@/lib/dal";
 import { COACHING_SLUG, durationFor, getEventTypeBySlug } from "@/lib/event-types";
-import { personalJoinUrl } from "@/lib/meeting";
+import { guestJoinUrl } from "@/lib/join";
 import { activeCredit, listPackages, packageBalances } from "@/lib/packages";
 import { listSessions, splitSessions } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
@@ -26,6 +26,7 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
   const coachingType = getEventTypeBySlug(COACHING_SLUG);
   const bookMinutes = credit ? durationFor(coachingType, credit.sessionMinutes) : 0;
   const bookDays = credit ? groupSlotsByDay(availableSlots(bookMinutes, { bufferMinutes: coachingType?.bufferMinutes })) : [];
+  const joinUrls = new Map(await Promise.all(upcoming.map(async (s) => [s.id, await guestJoinUrl(s, user.name)] as const)));
   const changeable = new Map(
     upcoming.map((s) => [
       s.id,
@@ -86,7 +87,7 @@ export default async function PortalSessionsPage({ searchParams }: { searchParam
                 </div>
                 {s.meetingUrl && (
                   <JoinButton
-                    url={personalJoinUrl(s.meetingUrl, { name: user.name, subject: s.title })!}
+                    url={joinUrls.get(s.id)!}
                     startsAt={s.startsAt}
                     durationMinutes={s.durationMinutes}
                     className="pt-btn pt-btn-secondary"

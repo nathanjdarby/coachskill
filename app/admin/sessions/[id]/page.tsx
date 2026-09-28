@@ -6,7 +6,8 @@ import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import { clients, coachingSessions, eventTypes } from "@/lib/db/schema";
 import { FOLLOW_UP_DELAY_MIN, composeFollowUp, endOf } from "@/lib/follow-up";
-import { personalJoinUrl } from "@/lib/meeting";
+import { appointmentAttendance, isNoShow } from "@/lib/attendance";
+import { hostJoinUrl } from "@/lib/join";
 import { formatDateTime } from "@/lib/time";
 
 export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   if (!row) notFound();
 
   const { a } = row;
+  const attendance = appointmentAttendance([a.id]).get(a.id);
   const who = row.clientName ?? a.inviteeName ?? a.inviteeEmail ?? "—";
   const firstName = who.split(/\s+/)[0];
   const end = endOf(a);
@@ -55,12 +57,23 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
           {who} · {formatDateTime(a.startsAt)} (UK) · {a.durationMinutes} min
         </p>
         {a.cancelledAt && <span className="pt-badge is-danger">Cancelled</span>}
+        {attendance && (
+          <p className="pt-small">
+            {attendance.waiting
+              ? `${attendance.waitingNames.join(", ")} is waiting in the call now.`
+              : isNoShow(attendance)
+                ? "No-show — they didn't join the call."
+                : attendance.guestJoined
+                  ? `Attended · ${attendance.guestMinutes} min in the call.`
+                  : null}
+          </p>
+        )}
       </div>
 
       {!a.cancelledAt && a.meetingUrl && (
         <p>
           <a
-            href={personalJoinUrl(a.meetingUrl, { name: admin.name, subject: a.title })!}
+            href={(await hostJoinUrl(a, admin.name))!}
             className="pt-btn pt-btn-primary"
             target="_blank"
             rel="noopener noreferrer"

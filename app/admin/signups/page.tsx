@@ -1,5 +1,6 @@
 import { listSignupsWithWorkshop, listWorkshops } from "@/lib/db/queries";
 import { AdminSignupsTable } from "@/components/AdminSignupsTable";
+import { workshopAttendance } from "@/lib/attendance";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/dal";
 import { formatDate } from "@/lib/time";
@@ -69,7 +70,7 @@ export default async function AdminSignupsPage({
         {rows.length} {rows.length === 1 ? "signup" : "signups"}
       </p>
 
-      <AdminSignupsTable signups={rows} />
+      <AdminSignupsTable signups={rows} attendedMinutes={Object.fromEntries(workshopAttendance([...new Set(rows.map((r) => r.workshopId))]))} />
     </div>
   );
 }

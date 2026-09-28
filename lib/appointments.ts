@@ -29,14 +29,19 @@ export function appointmentByToken(token: string): { appointment: Appointment; t
   return row;
 }
 
-/** The appointment's manage link (creating its secret the first time). */
-export async function manageUrl(appointment: Pick<Appointment, "id" | "manageTokenHash">) {
+/** The appointment's signed token (creating its secret the first time). */
+export function appointmentToken(appointment: Pick<Appointment, "id" | "manageTokenHash">) {
   let secret = appointment.manageTokenHash;
   if (!secret) {
     secret = newLinkSecret();
     getDb().update(coachingSessions).set({ manageTokenHash: secret }).where(eq(coachingSessions.id, appointment.id)).run();
   }
-  return appUrl(`/appointments/${signedToken("appointment", appointment.id, secret)}`);
+  return signedToken("appointment", appointment.id, secret);
+}
+
+/** The appointment's manage link. */
+export async function manageUrl(appointment: Pick<Appointment, "id" | "manageTokenHash">) {
+  return appUrl(`/appointments/${appointmentToken(appointment)}`);
 }
 
 /**

@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import { appUrl } from "@/lib/app-url";
+import { appointmentAttendance, isNoShow } from "@/lib/attendance";
 import { creditPackageSync } from "@/lib/booking";
 import { getDb } from "@/lib/db";
 import { clientNotes, coachingSessions, users, type Appointment } from "@/lib/db/schema";
@@ -60,11 +61,14 @@ export async function composeFollowUp(a: Appointment) {
  * Sends the follow-up once: claimed first, un-claimed if the email doesn't go out.
  * For clients, a recap is also saved as a shared update in their client area.
  */
-export async function sendFollowUp(appointmentId: number, now = new Date()) {
+export async function sendFollowUp(appointmentId: number, now = new Date(), opts: { automatic?: boolean } = {}) {
   const db = getDb();
   const a = db.select().from(coachingSessions).where(eq(coachingSessions.id, appointmentId)).get();
   if (!a || a.cancelledAt) return { ok: false, message: "This appointment was cancelled." } as const;
   if (a.followUpSentAt) return { ok: false, message: "The follow-up has already been sent." } as const;
+  if (opts.automatic && isNoShow(appointmentAttendance([a.id]).get(a.id))) {
+    return { ok: false, message: "They didn't join the call, so no follow-up was sent." } as const;
+  }
 
   const composed = await composeFollowUp(a);
   if ("error" in composed) return { ok: false, message: composed.error } as const;
@@ -113,6 +117,6 @@ export async function sendDueFollowUps(now: Date) {
     )
     .all();
   let sent = 0;
-  for (const { id } of due) if ((await sendFollowUp(id, now)).ok) sent++;
+  for (const { id } of due) if ((await sendFollowUp(id, now, { automatic: true })).ok) sent++;
   return sent;
 }

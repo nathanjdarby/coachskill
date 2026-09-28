@@ -6,7 +6,8 @@ import { getDb } from "@/lib/db";
 import { clients, coachingSessions, users, type Appointment } from "@/lib/db/schema";
 import { emailAdminBooking, emailSessionBooked, emailSessionCancelled, emailSessionRescheduled } from "@/lib/email";
 import { icsAttachment } from "@/lib/ics";
-import { joinNote, personalJoinUrl } from "@/lib/meeting";
+import { guestJoinUrl, hostJoinUrl } from "@/lib/join";
+import { joinNote } from "@/lib/meeting";
 import { adminEmails } from "@/lib/portal";
 import { formatDateTime } from "@/lib/time";
 
@@ -49,26 +50,30 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
   const { session } = row;
   const organizerEmail = process.env.EMAIL_REPLY_TO?.trim() || undefined;
 
-  const ics = icsAttachment({
-    sessionId: session.id,
-    sequence: session.icsSequence,
-    method: change === "cancelled" ? "CANCEL" : "REQUEST",
-    start: session.startsAt,
-    durationMinutes: session.durationMinutes,
-    title: `${session.title} with Monika`,
-    url: session.meetingUrl,
-    organizerEmail,
-  });
+  // Each person's invite carries their own join link.
+  const ics = (url: string | null) =>
+    icsAttachment({
+      sessionId: session.id,
+      sequence: session.icsSequence,
+      method: change === "cancelled" ? "CANCEL" : "REQUEST",
+      start: session.startsAt,
+      durationMinutes: session.durationMinutes,
+      title: `${session.title} with Monika`,
+      url,
+      organizerEmail,
+    });
 
   const recipient = await appointmentRecipient(session);
   if (recipient) {
+    const joinUrl = await guestJoinUrl(session, recipient.name);
     const base = {
       ...recipient,
       title: session.title,
       startsAt: session.startsAt,
       durationMinutes: session.durationMinutes,
       meetingUrl: session.meetingUrl,
-      attachments: [ics],
+      joinUrl,
+      attachments: [ics(joinUrl)],
     };
     if (change === "booked") await emailSessionBooked(base);
     else if (change === "rescheduled") await emailSessionRescheduled(base);
@@ -85,17 +90,18 @@ export async function notifyAppointmentChange(sessionId: number, change: Change,
         : session.discoveryCallId
           ? [`/admin/discovery#request-${session.discoveryCallId}`, "Open request"]
           : ["/admin/calendar", "Open calendar"];
+      const hostUrl = await hostJoinUrl(session, "");
       await emailAdminBooking({
         to,
         subject: `${who} ${verb} ${session.discoveryCallId && !session.clientId ? `a ${session.title.toLowerCase()}` : "a session"}`,
         lines: [
           `${session.title}: ${formatDateTime(session.startsAt)} (UK), ${session.durationMinutes} minutes.`,
-          ...(session.meetingUrl && change !== "cancelled" ? [`Join: ${personalJoinUrl(session.meetingUrl, { subject: session.title })}`] : []),
+          ...(hostUrl && change !== "cancelled" ? [`Join: ${hostUrl}`] : []),
           ...(change !== "cancelled" && joinNote(session.meetingUrl, "admin") ? [joinNote(session.meetingUrl, "admin")!] : []),
         ],
         url: await appUrl(url),
         buttonLabel,
-        attachments: [ics],
+        attachments: [ics(hostUrl)],
       });
     }
   }

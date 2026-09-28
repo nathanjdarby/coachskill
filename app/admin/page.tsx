@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WaitingBanner } from "@/components/admin/WaitingBanner";
 import { requireAdmin } from "@/lib/dal";
 import {
   adminDashboardCounts,
@@ -35,6 +36,8 @@ export default async function AdminOverviewPage() {
         <h1>Hello, {admin.name.split(/\s+/)[0]}</h1>
         <p className="pt-muted">Here&apos;s what&apos;s happening with your clients.</p>
       </div>
+
+      <WaitingBanner />
 
       <div className="pt-stats">
         {stats.map((s) => (

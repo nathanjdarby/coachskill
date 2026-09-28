@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { NEW_WORKSHOP, WorkshopForm } from "@/components/admin/WorkshopForm";
 import { requireAdmin } from "@/lib/dal";
-import { personalJoinUrl } from "@/lib/meeting";
+import { workshopHostJoinUrl } from "@/lib/join";
 import { formatPence } from "@/lib/money";
 import { formatDateTime, toLondonInputValue } from "@/lib/time";
 import { listWorkshopsForAdmin } from "@/lib/workshops";
@@ -9,6 +9,7 @@ import { listWorkshopsForAdmin } from "@/lib/workshops";
 export default async function AdminWorkshopsPage() {
   const admin = await requireAdmin();
   const runs = await listWorkshopsForAdmin();
+  const hostLinks = new Map(await Promise.all(runs.map(async (w) => [w.id, await workshopHostJoinUrl(w, admin.name)] as const)));
 
   return (
     <div className="pt-page">
@@ -55,7 +56,7 @@ export default async function AdminWorkshopsPage() {
                 {w.meetingUrl ? (
                   <>
                     <span className="pt-muted">Join link: </span>
-                    <a href={personalJoinUrl(w.meetingUrl, { name: admin.name, subject: w.name })!} className="pt-link" target="_blank" rel="noopener noreferrer">
+                    <a href={hostLinks.get(w.id) ?? w.meetingUrl} className="pt-link" target="_blank" rel="noopener noreferrer">
                       {w.meetingUrl.replace(/^https:\/\//, "")}
                     </a>
                   </>

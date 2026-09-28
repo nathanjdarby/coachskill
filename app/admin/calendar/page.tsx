@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { WaitingBanner } from "@/components/admin/WaitingBanner";
 import { requireAdmin } from "@/lib/dal";
 import { agendaWindow, groupByDay, listAgenda } from "@/lib/calendar";
-import { personalJoinUrl } from "@/lib/meeting";
 import { formatDay, formatTime } from "@/lib/time";
 
 const RANGES = [14, 60] as const;
@@ -10,7 +10,7 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
   const admin = await requireAdmin();
   const days = (await searchParams).days === "60" ? 60 : 14;
   const { from, to } = agendaWindow(days);
-  const agenda = groupByDay(await listAgenda(from, to));
+  const agenda = groupByDay(await listAgenda(from, to, admin.name));
 
   return (
     <div className="pt-page pt-narrow">
@@ -18,6 +18,8 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
         <h1>Calendar</h1>
         <p className="pt-muted">Sessions, discovery calls and workshops. All times are UK time.</p>
       </div>
+
+      <WaitingBanner />
 
       <div className="cal-toolbar">
         <div className="su-segmented" role="group" aria-label="Range">
@@ -57,10 +59,13 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
                     </span>
                     <Link href={item.href} className="cal-body">
                       <span className="cal-title">{item.title}</span>
-                      <span className="pt-muted pt-small">{item.who}</span>
+                      <span className="pt-muted pt-small">
+                        {item.who}
+                        {item.status && <span className={`pt-badge is-${item.status.tone} cal-status`}>{item.status.label}</span>}
+                      </span>
                     </Link>
                     {item.joinUrl && (
-                      <a href={personalJoinUrl(item.joinUrl, { name: admin.name, subject: item.title })!} className="pt-btn pt-btn-secondary cal-join" target="_blank" rel="noopener noreferrer">
+                      <a href={item.joinUrl} className="pt-btn pt-btn-secondary cal-join" target="_blank" rel="noopener noreferrer">
                         Join
                       </a>
                     )}

@@ -6,7 +6,7 @@ import { JoinButton } from "@/components/JoinButton";
 import { SessionActions } from "@/components/portal/SessionActions";
 import { appointmentByToken, isUpcoming } from "@/lib/appointments";
 import { availableSlots, canClientChange, getBookingSettings, groupSlotsByDay } from "@/lib/booking";
-import { personalJoinUrl } from "@/lib/meeting";
+import { guestJoinUrl } from "@/lib/join";
 import { formatDateTime } from "@/lib/time";
 
 export const metadata: Metadata = {
@@ -71,7 +71,7 @@ export default async function AppointmentPage({
         <div className="pt-appt-actions">
           {a.meetingUrl && (
             <JoinButton
-              url={personalJoinUrl(a.meetingUrl, { name: a.inviteeName, subject: a.title })!}
+              url={(await guestJoinUrl(a, a.inviteeName))!}
               startsAt={a.startsAt}
               durationMinutes={a.durationMinutes}
               label="Join the call"
