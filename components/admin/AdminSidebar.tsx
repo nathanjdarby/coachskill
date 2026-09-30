@@ -50,6 +50,10 @@ export function adminNavGroups(counts: Counts): NavGroup[] {
         { href: "/admin/packages", label: "Packages", icon: "packages" },
       ],
     },
+    {
+      title: "Admin",
+      items: [{ href: "/admin/settings", label: "Settings", icon: "settings" }],
+    },
   ];
 }
 

@@ -16,6 +16,7 @@ const HINTS: Record<string, string> = {
   "/admin/workshops": "Workshop pages and dates",
   "/admin/signups": "Bookings, payments and attendance",
   "/admin/packages": "Coaching packages clients can buy",
+  "/admin/settings": "Add, edit and remove users",
 };
 
 export default async function AdminMorePage() {

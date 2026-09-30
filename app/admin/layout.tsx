@@ -74,8 +74,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavLink href="/admin/resources" className="pt-desktop-flex">
             <span>Resources</span>
           </NavLink>
+          <NavLink href="/admin/settings" className="pt-desktop-flex">
+            <span>Settings</span>
+          </NavLink>
           {/* Mobile has room for four tabs; the rest live under More. */}
-          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/workshops", "/admin/signups", "/admin/packages", "/admin/scheduling", "/admin/availability", "/admin/resources", "/admin/account"]} className="pt-mobile-flex">
+          <NavLink href="/admin/more" also={["/admin/discovery", "/admin/workshops", "/admin/signups", "/admin/packages", "/admin/scheduling", "/admin/availability", "/admin/resources", "/admin/settings", "/admin/account"]} className="pt-mobile-flex">
             <TabIcon name="more" />
             <span>More</span>
             <Count n={counts.newDiscoveryRequests} label="new requests" />

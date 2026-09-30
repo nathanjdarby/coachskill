@@ -3,28 +3,23 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import { ensureClientUser, findUserByEmail, issuePasswordToken } from "@/lib/accounts";
+import { and, eq, isNull } from "drizzle-orm";
+import { ensureClientUser, findUserByEmail, purgeClient, sendAccountInvite } from "@/lib/accounts";
 import { appUrl } from "@/lib/app-url";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
 import {
   bookingLinks,
   clientNotes,
-  clientPackages,
   clients,
   coachingSessions,
   discoveryCalls,
   messages,
-  passwordTokens,
-  resourceShares,
-  signups,
   users,
   type Client,
 } from "@/lib/db/schema";
 import {
   emailNewMessageToClient,
-  emailPortalInvite,
   emailSharedUpdate,
 } from "@/lib/email";
 import { packageBalances } from "@/lib/packages";
@@ -61,22 +56,9 @@ async function sendInvite(client: Client): Promise<FormState> {
     return { ok: false, message: `${client.fullName} already has an account. They can use "Forgot password" on the login page if needed.` };
   }
 
-  const token = await issuePasswordToken(result.user.id, "invite");
-  const link = await appUrl(`/set-password/${token}`);
-  const sent = await emailPortalInvite({ to: client.email, name: client.fullName, url: link, role: "client" });
+  const sent = await sendAccountInvite(result.user);
   revalidateClient(client.id);
-
-  if (sent.ok) {
-    return { ok: true, message: `Invite emailed to ${client.email}. The link expires in 7 days.` };
-  }
-  return {
-    ok: false,
-    message:
-      sent.reason === "not_configured"
-        ? "Email isn't set up yet (RESEND_API_KEY is missing), so nothing was sent. Copy this link and send it to them yourself — it won't be shown again:"
-        : "The invite email couldn't be sent. Copy this link and send it to them yourself — it won't be shown again:",
-    link,
-  };
+  return sent;
 }
 
 async function createClientRecord(input: {
@@ -380,33 +362,7 @@ export async function deleteClient(clientId: number, _state: FormState, formData
     return { ok: false, errors: { confirmName: `Type "${client.fullName}" exactly to confirm.` } };
   }
 
-  const db = getDb();
-  db.transaction(() => {
-    const account = db.select({ id: users.id }).from(users).where(eq(users.clientId, clientId)).get();
-    db.delete(messages).where(eq(messages.clientId, clientId)).run();
-    db.delete(clientNotes).where(eq(clientNotes.clientId, clientId)).run();
-    // Discovery calls go back to being the prospect's (kept with the request); other sessions go.
-    db.update(coachingSessions)
-      .set({ clientId: null })
-      .where(and(eq(coachingSessions.clientId, clientId), isNotNull(coachingSessions.discoveryCallId)))
-      .run();
-    const doomed = db.select({ id: coachingSessions.id }).from(coachingSessions).where(eq(coachingSessions.clientId, clientId)).all();
-    if (doomed.length) {
-      db.update(bookingLinks)
-        .set({ appointmentId: null })
-        .where(inArray(bookingLinks.appointmentId, doomed.map((d) => d.id)))
-        .run();
-    }
-    db.delete(coachingSessions).where(eq(coachingSessions.clientId, clientId)).run();
-    db.delete(clientPackages).where(eq(clientPackages.clientId, clientId)).run();
-    db.delete(resourceShares).where(eq(resourceShares.clientId, clientId)).run();
-    db.update(signups).set({ clientId: null, updatedAt: new Date() }).where(eq(signups.clientId, clientId)).run();
-    if (account) {
-      db.delete(passwordTokens).where(eq(passwordTokens.userId, account.id)).run();
-      db.delete(users).where(eq(users.id, account.id)).run();
-    }
-    db.delete(clients).where(eq(clients.id, clientId)).run();
-  });
+  purgeClient(clientId);
 
   revalidatePath("/admin/clients");
   revalidatePath("/admin");
