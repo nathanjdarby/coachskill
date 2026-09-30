@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveWorkshop } from "@/app/actions/workshops";
+import { deleteWorkshop, saveWorkshop } from "@/app/actions/workshops";
 import { FieldError, FormMessage, SubmitButton } from "@/components/portal/FormBits";
 import { newDateFor, type ProgrammeChoice, type WorkshopFormValues } from "@/lib/workshop-form";
 
@@ -134,6 +134,25 @@ export function WorkshopForm({
       )}
       <FormMessage state={state} />
       <SubmitButton>{id == null ? "Add date" : "Save changes"}</SubmitButton>
+    </form>
+  );
+}
+
+/** Deletes a workshop date after a confirm; the server refuses if anyone has paid or been accepted. */
+export function DeleteWorkshopButton({ id }: { id: number }) {
+  const [state, action] = useActionState(async () => deleteWorkshop(id), undefined);
+  return (
+    <form action={action} className="pt-inline-form">
+      <button
+        type="submit"
+        className="pt-btn pt-btn-danger"
+        onClick={(e) => {
+          if (!confirm("Delete this date? Any unpaid or declined enquiries for it are removed too. This can't be undone.")) e.preventDefault();
+        }}
+      >
+        Delete date
+      </button>
+      <FormMessage state={state} />
     </form>
   );
 }

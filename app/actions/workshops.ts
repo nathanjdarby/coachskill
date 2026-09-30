@@ -3,11 +3,11 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { onboardAttendee } from "@/lib/attendees";
 import { requireAdmin } from "@/lib/dal";
 import { getDb } from "@/lib/db";
-import { signups, workshopProgrammes, workshops } from "@/lib/db/schema";
+import { meetingAttendance, resourceShares, signups, workshopProgrammes, workshops } from "@/lib/db/schema";
 import { emailAttendeeInvite } from "@/lib/email";
 import { sendBalanceLinkNow } from "@/lib/jobs/workshop-balance";
 import { isJitsiUrl, newJitsiUrl } from "@/lib/meeting";
@@ -148,6 +148,34 @@ export async function deleteProgramme(id: number): Promise<FormState> {
   if (row?.imageKey && !row.imageKey.startsWith("/")) await deleteUpload(row.imageKey);
   revalidateWorkshops();
   redirect("/admin/workshops");
+}
+
+/**
+ * Deletes a workshop date. Refused while anyone has paid or been accepted, since
+ * those bookings are payment records; unpaid pending or declined ones go with it.
+ */
+export async function deleteWorkshop(id: number): Promise<FormState> {
+  await requireAdmin();
+  const db = getDb();
+  const [run] = await db.select().from(workshops).where(eq(workshops.id, id)).limit(1);
+  if (!run) return { ok: false, message: "That date no longer exists." };
+  const bookings = await db.select().from(signups).where(eq(signups.workshopId, id));
+  const kept = bookings.filter((s) => s.amountPaidPence > 0 || s.depositPaidAt || s.status === "accepted" || s.status === "on_hold");
+  if (kept.length) {
+    return {
+      ok: false,
+      message: `${kept.length} ${kept.length === 1 ? "person has" : "people have"} paid or been accepted for this date, so it can't be deleted — that would lose their payment records. Untick "Published" in Edit to hide it instead.`,
+    };
+  }
+
+  db.transaction(() => {
+    if (bookings.length) db.delete(signups).where(inArray(signups.id, bookings.map((b) => b.id))).run();
+    db.delete(resourceShares).where(eq(resourceShares.workshopId, id)).run();
+    db.delete(meetingAttendance).where(eq(meetingAttendance.workshopId, id)).run();
+    db.delete(workshops).where(eq(workshops.id, id)).run();
+  });
+  revalidateWorkshops();
+  redirect(run.programmeId ? `/admin/workshops/${run.programmeId}` : "/admin/workshops");
 }
 
 /** Creates (id = null) or updates a workshop run. */

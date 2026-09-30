@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { toChoice } from "@/components/admin/WorkshopDatesTable";
-import { WorkshopForm } from "@/components/admin/WorkshopForm";
+import { DeleteWorkshopButton, WorkshopForm } from "@/components/admin/WorkshopForm";
 import { requireAdmin } from "@/lib/dal";
 import { workshopHostJoinUrl } from "@/lib/join";
 import { formatPence } from "@/lib/money";
@@ -82,6 +82,7 @@ export default async function AdminWorkshopPage({ params }: { params: Promise<{ 
           <Link href={`/admin/signups?workshop=${w.id}`} className="pt-btn pt-btn-secondary">
             View signups
           </Link>
+          <DeleteWorkshopButton id={w.id} />
         </div>
       </section>
 
