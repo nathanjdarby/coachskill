@@ -16,7 +16,6 @@ const HINTS: Record<string, string> = {
   "/admin/workshops": "Workshop pages and dates",
   "/admin/signups": "Bookings, payments and attendance",
   "/admin/packages": "Coaching packages clients can buy",
-  "/admin/settings": "Add, edit and remove users",
 };
 
 export default async function AdminMorePage() {
@@ -52,6 +51,15 @@ export default async function AdminMorePage() {
       <section>
         <h2 className="pt-subhead">Account</h2>
         <ul className="pt-link-list">
+          <li>
+            <Link href="/admin/settings">
+              <span>
+                <span className="pt-link-list-title">Settings</span>
+                <span className="pt-muted pt-small">Add, edit and remove users</span>
+              </span>
+              <span aria-hidden className="pt-link-list-chevron">›</span>
+            </Link>
+          </li>
           <li>
             <Link href="/admin/account">
               <span>

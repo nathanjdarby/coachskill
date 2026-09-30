@@ -29,6 +29,7 @@ export function AppSidebar({
   accountHref,
   name,
   extra,
+  footItems = [],
 }: {
   label: string;
   home: string;
@@ -39,6 +40,8 @@ export function AppSidebar({
   name: string;
   /** Shown above the account links, e.g. a booking prompt. */
   extra?: React.ReactNode;
+  /** Links shown with the account links at the bottom, e.g. Settings. */
+  footItems?: NavItem[];
 }) {
   return (
     <aside className="pt-sidebar" aria-label={label}>
@@ -74,6 +77,12 @@ export function AppSidebar({
       {extra}
 
       <div className="pt-sidebar-foot">
+        {footItems.map((item) => (
+          <NavLink key={item.href} href={item.href} exact={item.exact} also={item.also} className="pt-sidebar-link">
+            <TabIcon name={item.icon} />
+            <span className="pt-sidebar-label">{item.label}</span>
+          </NavLink>
+        ))}
         <NavLink href={accountHref} className="pt-sidebar-link">
           <TabIcon name="account" />
           <span className="pt-sidebar-label">{name}</span>

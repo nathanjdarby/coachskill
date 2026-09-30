@@ -50,14 +50,12 @@ export function adminNavGroups(counts: Counts): NavGroup[] {
         { href: "/admin/packages", label: "Packages", icon: "packages" },
       ],
     },
-    {
-      title: "Admin",
-      items: [{ href: "/admin/settings", label: "Settings", icon: "settings" }],
-    },
   ];
 }
 
+const SETTINGS = { href: "/admin/settings", label: "Settings", icon: "settings" } as const;
+
 /** The admin's desktop sidebar. */
 export function AdminSidebar({ name, counts }: { name: string; counts: Counts }) {
-  return <AppSidebar label="Admin" home="/admin" tag="Admin" groups={adminNavGroups(counts)} accountHref="/admin/account" name={name} />;
+  return <AppSidebar label="Admin" home="/admin" tag="Admin" groups={adminNavGroups(counts)} accountHref="/admin/account" name={name} footItems={[SETTINGS]} />;
 }

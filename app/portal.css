@@ -2884,8 +2884,14 @@ fieldset.pt-field {
     padding: 20px 14px 16px;
     border-right: 1px solid var(--border-subtle);
     background: linear-gradient(180deg, rgba(17, 24, 39, 0.96) 0%, rgba(10, 15, 26, 0.98) 100%);
+    overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-width: thin;
+    /* Still scrolls on very short windows, just without a visible bar */
+    scrollbar-width: none;
+  }
+
+  .pt-sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .pt-sidebar-brand {
@@ -2978,6 +2984,32 @@ fieldset.pt-field {
     margin-top: 18px;
     padding-top: 14px;
     border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Shorter windows: tighten the spacing so every link fits without scrolling */
+  @media (max-height: 900px) {
+    .pt-sidebar {
+      padding-top: 16px;
+      padding-bottom: 12px;
+    }
+
+    .pt-sidebar-brand {
+      padding-bottom: 14px;
+    }
+
+    .pt-sidebar-nav {
+      gap: 12px;
+    }
+
+    .pt-sidebar .pt-sidebar-link {
+      padding-top: 7px;
+      padding-bottom: 7px;
+    }
+
+    .pt-sidebar-foot {
+      margin-top: 12px;
+      padding-top: 10px;
+    }
   }
 
   .pt-shell-sidebar > .pt-main {
