@@ -596,6 +596,27 @@ footer p {
   font-size: 0.875rem;
 }
 
+footer .powered-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-decoration: none;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+footer .powered-by:hover {
+  opacity: 1;
+}
+
+footer .powered-by img {
+  height: 26px;
+  width: auto;
+}
+
 /* Modal */
 .modal-overlay {
   display: none;

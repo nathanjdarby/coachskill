@@ -12,6 +12,20 @@ export function Footer() {
           height={32}
         />
         <p>© Coach Skill 2026</p>
+        <a
+          className="powered-by"
+          href="https://automafoundry.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>Powered by</span>
+          <Image
+            src="/assets/automafoundry-logo.png"
+            alt="AutomaFoundry"
+            width={560}
+            height={96}
+          />
+        </a>
       </div>
     </footer>
   );
